@@ -1,0 +1,15 @@
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\bin\Debug\kinectSpaces.exe.config
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\bin\Debug\kinectSpaces.exe
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\bin\Debug\kinectSpaces.pdb
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\kinectSpaces.csproj.AssemblyReference.cache
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\MainWindow.g.cs
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\App.g.cs
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\kinectSpaces_MarkupCompile.cache
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\kinectSpaces_MarkupCompile.lref
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\MainWindow.baml
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\kinectSpaces.g.resources
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\kinectSpaces.Properties.Resources.resources
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\kinectSpaces.csproj.GenerateResource.cache
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\kinectSpaces.csproj.CoreCompileInputs.cache
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\kinectSpaces.exe
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\Debug\kinectSpaces.pdb

@@ -1,0 +1,17 @@
+﻿<Application x:Class="kinectSpaces.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:kinectSpaces"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                			
+				<ResourceDictionary Source="/Visualization/WindowDarkTheme.xaml"/>
+                <ResourceDictionary Source="/Visualization/Brushes.xaml"/>
+
+
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

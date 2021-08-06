@@ -1,0 +1,5 @@
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\x64\Debug\MainWindow.g.cs
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\x64\Debug\App.g.cs
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\x64\Debug\GeneratedInternalTypeHelper.g.cs
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\x64\Debug\kinectSpaces_MarkupCompile.cache
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\x64\Debug\kinectSpaces_MarkupCompile.lref
