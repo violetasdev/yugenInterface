@@ -6,10 +6,6 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                			
-				<ResourceDictionary Source="/Visualization/WindowDarkTheme.xaml"/>
-                <ResourceDictionary Source="/Visualization/Brushes.xaml"/>
-
 
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
