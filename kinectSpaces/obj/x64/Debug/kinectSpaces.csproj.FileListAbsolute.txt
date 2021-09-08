@@ -17,3 +17,4 @@ C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\x64\Debug\kinectS
 C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\bin\x64\Debug\Microsoft.Kinect.dll
 C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\bin\x64\Debug\Microsoft.Kinect.xml
 C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\x64\Debug\kinectSpaces.csproj.CopyComplete
+C:\Users\viole\Documents\GitHub\catkInterface\kinectSpaces\obj\x64\Debug\Theme\Dictionary1.baml

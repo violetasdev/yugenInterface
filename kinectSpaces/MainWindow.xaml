@@ -92,51 +92,13 @@
                         <TabItem Name="Bodies" Header="Properties" Background="#FF2D2D30" BorderBrush="#FF2D2D30" Foreground="Black">
                             <Border Background="#FF2D2D30" Margin="0" Padding="0">
                                 <Grid>
-
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="30"/>
-                                        <RowDefinition Height="30"/>
-                                        <RowDefinition Height="30"/>
-                                        <RowDefinition Height="30"/>
-                                        <RowDefinition Height="30"/>
-                                        <RowDefinition Height="30"/>
-                                        <RowDefinition Height="30"/>
-                                    </Grid.RowDefinitions>
-
-                                    <Grid Grid.Row="0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" ></ColumnDefinition>
-                                            <ColumnDefinition Width="*" ></ColumnDefinition>
-                                            <ColumnDefinition Width="*" ></ColumnDefinition>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid Grid.Column="0">
-                                            <Label x:Name="prop_bodyid_00" Grid.Row="0" Content="Body ID" FontSize="12" Foreground="White" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                        </Grid>
-                                        <Grid Grid.Column="1">
-                                            <Label x:Name="prop_orientation_00" Grid.Row="0" Content="Orientation" FontSize="12" Foreground="White" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                        </Grid>
-                                        <Grid Grid.Column="2">
-                                            <Label x:Name="prop_coordinats_00" Grid.Row="0" Content="Coordinates" FontSize="12" Foreground="White" HorizontalAlignment="Center" FontWeight="Bold"/>
-                                        </Grid>
-                                    </Grid>
-
-
-                                    <Grid Grid.Row="1">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" ></ColumnDefinition>
-                                            <ColumnDefinition Width="*" ></ColumnDefinition>
-                                            <ColumnDefinition Width="*" ></ColumnDefinition>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid Grid.Column="0">
-                                            <Label x:Name="prop_bodyid_01" Grid.Row="0" Content="Body ID" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
-                                        </Grid>
-                                        <Grid Grid.Column="1">
-                                            <Label x:Name="prop_orientation_01" Grid.Row="0" Content="Orientation" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
-                                        </Grid>
-                                        <Grid Grid.Column="2">
-                                            <Label x:Name="prop_coordinats_01" Grid.Row="0" Content="Coordinates" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
-                                        </Grid>
-                                    </Grid>
+                                    <DataGrid Name="bodyData" ItemsSource="{Binding}" AutoGenerateColumns="False" Background="#FF3F3F46" BorderBrush="#FF2D2D30" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" CanUserResizeColumns="False" CanUserReorderColumns="False" >
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Width="*" Header="Body ID"  Binding="{Binding bodyID}"/>
+                                            <DataGridTextColumn Width="*" Header="Orientation" Binding="{Binding bodyOrientation}" />
+                                            <DataGridTextColumn Width="*" Header="Coordinates" Binding="{Binding bodyCoordinates}" />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
                                 </Grid>
                             </Border>
                         </TabItem>
@@ -148,7 +110,7 @@
 
             <Grid Grid.Column="2" Background="#FF3F3F46">
                 <TabControl Name="CanvasTabControl" SelectedIndex="0" Margin="0,4,0,4" Background="#FF2D2D30" Foreground="White" BorderBrush="#FF2D2D30">
-                    <TabItem Name="CanvasVisualization" Header="Visualization" Background="#FF2D2D30" Foreground="Black" BorderBrush="#FF2D2D30" IsSelected="True" >
+                    <TabItem Name="CanvasVisualization" Header="Visualization" Background="#FF2D2D30" Foreground="Black" BorderBrush="#FF2D2D30">
                         <Border Background="Black" Margin="0" Padding="0">
                             <Grid>
                                 <Grid.RowDefinitions>

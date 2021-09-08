@@ -72,6 +72,10 @@ namespace kinectSpaces
         List<Brush> bodyBrushes = new List<Brush>();
         public double dperPixZ = 0;
         public double dperPixX = 0;
+
+
+        // Data - Bodies
+        List<bodyItems> bodiesTable = new List<bodyItems>();
         public MainWindow()
         {
             // Initialize the sensor
@@ -181,7 +185,8 @@ namespace kinectSpaces
             MultiSourceFrame multiSourceFrame = e.FrameReference.AcquireFrame();
             BodyFrame bodyFrame = multiSourceFrame.BodyFrameReference.AcquireFrame();
 
-            using (bodyFrame) {
+            using (bodyFrame)
+            {
                 if (bodyFrame != null)
                 {
 
@@ -369,7 +374,9 @@ namespace kinectSpaces
                     {
                         is_tracked = true;
                         createBody(fieldOfView.ActualWidth / 2 + bodyX, bodyZ, bodyBrushes[exist_id]);
-                        //coord_body.Content = coordinatesFieldofView(tracked_bodies[exist_id]);
+                        bodiesTable.Add(new bodyItems {bodyID=current_id.ToString(), bodyCoordinates= coordinatesFieldofView(tracked_bodies[new_id]), bodyOrientation="0" });
+
+                        bodyData.ItemsSource = bodiesTable;
                         break;
                     }
                 }
@@ -384,13 +391,22 @@ namespace kinectSpaces
                             bodies_ids[fill_id] = current_id;
 
                             createBody(fieldOfView.ActualWidth / 2 + bodyX, bodyZ, bodyBrushes[fill_id]);
-                            prop_coordinats_01.Content = coordinatesFieldofView(tracked_bodies[new_id]);
+                            bodiesTable.Add(new bodyItems { bodyID = current_id.ToString(), bodyCoordinates = coordinatesFieldofView(tracked_bodies[new_id]), bodyOrientation = "0" });
+
+                            bodyData.ItemsSource = bodiesTable;
 
                             break;
                         }
                     }
                 }
             }
+        }
+
+        class bodyItems
+        {
+            public string bodyID { get; set; }
+            public string bodyOrientation { get; set; }
+            public string bodyCoordinates { get; set; }
         }
 
         private string coordinatesFieldofView(Body current_body)
@@ -406,7 +422,7 @@ namespace kinectSpaces
             return "X: " + coord_x + " Y: " + coord_y;
         }
 
-     
+
 
         // ***************************************************************************//
         // ************************* BODY DATA PROCESSING **************************//
@@ -650,13 +666,13 @@ namespace kinectSpaces
             myPolygon.Stroke = Brushes.Gold;
             myPolygon.StrokeThickness = 1;
             myPolygon.Opacity = 0.85;
-            
+
 
             //Add the triangle in our canvas
             gridTriangle.Width = canvasWidth;
             gridTriangle.Height = canvasHeight;
             gridTriangle.Children.Add(myPolygon);
-            
+
         }
     }
 }
