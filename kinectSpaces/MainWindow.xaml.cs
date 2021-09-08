@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
+using System.ComponentModel;
 using Microsoft.Kinect;
 
 namespace kinectSpaces
@@ -20,15 +21,52 @@ namespace kinectSpaces
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    /// 
+    public enum DisplayFrameType
+    {
+        Color,
+        Body
+    }
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
 
+        //General
         private KinectSensor kinectSensor = null;
         private DrawingGroup drawingGroup;
         private DrawingImage imageSource;
-
         private MultiSourceFrameReader multiSourceFrameReader = null;
+        private const DisplayFrameType DEFAULT_DISPLAYFRAMETYPE = DisplayFrameType.Color;
 
+
+        // Visualization - RGB
+
+        private WriteableBitmap bitmap = null;
+        private FrameDescription currentFrameDescription;
+        private DisplayFrameType currentDisplayFrameType;
+
+        // Visualization - Skeleton
+        private const float InferredZPositionClamp = 0.1f;
+
+        private CoordinateMapper coordinateMapper = null;
+        private Body[] skeletons = null;
+        private List<Tuple<JointType, JointType>> bones;
+        private List<Pen> skeletonsColors;
+
+        private const double JointThickness = 3;
+        private const double ClipBoundsThickness = 10;
+        private readonly Brush trackedJointBrush = new SolidColorBrush(Color.FromArgb(255, 68, 192, 68));
+        private readonly Brush inferredJointBrush = Brushes.Yellow;
+        private readonly Pen inferredBonePen = new Pen(Brushes.Gray, 1);
+
+        private const double HandSize = 20;
+        private readonly Brush handClosedBrush = new SolidColorBrush(Color.FromArgb(128, 255, 0, 0));
+        private readonly Brush handOpenBrush = new SolidColorBrush(Color.FromArgb(128, 0, 255, 0));
+        private readonly Brush handLassoBrush = new SolidColorBrush(Color.FromArgb(128, 0, 0, 255));
+
+        private int displayWidthBody;
+        private int displayHeightBody;
+
+        //  Visualization - Movement
         private Body[] bodies = null;
         ulong[] bodies_ids = { 0, 0, 0, 0, 0, 0 };
         List<Brush> bodyBrushes = new List<Brush>();
@@ -38,36 +76,81 @@ namespace kinectSpaces
         {
             // Initialize the sensor
             this.kinectSensor = KinectSensor.GetDefault();
+            this.multiSourceFrameReader = this.kinectSensor.OpenMultiSourceFrameReader(FrameSourceTypes.Body | FrameSourceTypes.Color);
+            this.multiSourceFrameReader.MultiSourceFrameArrived += this.Reader_MultiSourceFrameArrived;
 
-            // Create the drawing group we'll use for drawing as we have a set of geometries to insert
+            SetupCurrentDisplay(DEFAULT_DISPLAYFRAMETYPE);
+
+
+            // Trajectories
             this.drawingGroup = new DrawingGroup();
-            // Create an image source that we can use in our image control
             this.imageSource = new DrawingImage(this.drawingGroup);
 
+
+            this.ellipseIndexColors();
             // Object with the information
             this.DataContext = this;
 
-            // Get body information from the sensor
-            this.multiSourceFrameReader = this.kinectSensor.OpenMultiSourceFrameReader(FrameSourceTypes.Body);
-            this.multiSourceFrameReader.MultiSourceFrameArrived += this.Reader_MultiSourceFrameArrived;
-
-            //Create the colors to identify each person
-            this.bodyIndexColors();
-            // open the sensor
             this.kinectSensor.Open();
             InitializeComponent();
         }
 
-        private void bodyIndexColors()
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void SetupCurrentDisplay(DisplayFrameType newDisplayFrameType)
         {
+            currentDisplayFrameType = newDisplayFrameType;
+            switch (currentDisplayFrameType)
 
-            this.bodyBrushes.Add(Brushes.Red);
-            this.bodyBrushes.Add(Brushes.Black);
-            this.bodyBrushes.Add(Brushes.Green);
-            this.bodyBrushes.Add(Brushes.Blue);
-            this.bodyBrushes.Add(Brushes.Indigo);
-            this.bodyBrushes.Add(Brushes.Violet);
+            {
+                case DisplayFrameType.Color:
+                    FrameDescription colorFrameDescription = this.kinectSensor.ColorFrameSource.FrameDescription;
+                    this.CurrentFrameDescription = colorFrameDescription;
+                    // create the bitmap to display
+                    this.bitmap = new WriteableBitmap(colorFrameDescription.Width, colorFrameDescription.Height, 96.0, 96.0, PixelFormats.Bgra32, null);
+                    break;
 
+                case DisplayFrameType.Body:
+                    this.coordinateMapper = this.kinectSensor.CoordinateMapper;
+                    FrameDescription bodyDepthFrameDescription = this.kinectSensor.DepthFrameSource.FrameDescription;
+                    this.CurrentFrameDescription = bodyDepthFrameDescription;
+
+                    // get size of the scene
+                    this.displayWidthBody = bodyDepthFrameDescription.Width;
+                    this.displayHeightBody = bodyDepthFrameDescription.Height;
+
+                    // Define a bone as the line between two joints
+                    this.bones = new List<Tuple<JointType, JointType>>();
+                    // Create the body bones
+                    this.defineBoneParts();
+
+                    // Populate body colors that you wish to show, one for each BodyIndex:
+                    this.skeletonsColors = new List<Pen>();
+                    this.skeletonsIndexColors();
+
+                    // We need to create a drawing group
+                    this.drawingGroup = new DrawingGroup();
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        public FrameDescription CurrentFrameDescription
+        {
+            get { return this.currentFrameDescription; }
+            set
+            {
+                if (this.currentFrameDescription != value)
+                {
+                    this.currentFrameDescription = value;
+                    if (this.PropertyChanged != null)
+                    {
+                        this.PropertyChanged(this, new PropertyChangedEventArgs("CurrentFrameDescription"));
+                    }
+                }
+            }
         }
 
         //Create each ellipse (circle) used to show the position of the person in the camera's field of view
@@ -94,10 +177,11 @@ namespace kinectSpaces
 
         private void Reader_MultiSourceFrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
         {
-            var reference = e.FrameReference.AcquireFrame();
 
-            using (var bodyFrame = reference.BodyFrameReference.AcquireFrame())
-            {
+            MultiSourceFrame multiSourceFrame = e.FrameReference.AcquireFrame();
+            BodyFrame bodyFrame = multiSourceFrame.BodyFrameReference.AcquireFrame();
+
+            using (bodyFrame) {
                 if (bodyFrame != null)
                 {
 
@@ -121,8 +205,125 @@ namespace kinectSpaces
 
                 }
             }
+
+            switch (currentDisplayFrameType)
+            {
+                case DisplayFrameType.Body:
+
+                    using (BodyFrame skeletonFrame = multiSourceFrame.BodyFrameReference.AcquireFrame())
+                    {
+                        ShowBodyFrame(skeletonFrame);
+                    }
+
+                    break;
+                case DisplayFrameType.Color:
+                    using (ColorFrame colorFrame = multiSourceFrame.ColorFrameReference.AcquireFrame())
+                    {
+                        ShowColorFrame(colorFrame);
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+
+
         }
 
+        private void ShowBodyFrame(BodyFrame bodyFrame)
+        {
+            bool dataReceived = false;
+            if (bodyFrame != null)
+            {
+
+                if (this.skeletons == null)
+                {
+                    this.skeletons = new Body[bodyFrame.BodyCount];
+                }
+
+                // The first time GetAndRefreshBodyData is called, Kinect will allocate each Body in the array.
+                // As long as those body objects are not disposed/eliminated and not set to null in the array,
+                // those body objects will be re-used.
+                bodyFrame.GetAndRefreshBodyData(this.skeletons);
+                dataReceived = true;
+            }
+
+
+            if (dataReceived)
+            {
+                using (DrawingContext dc = this.drawingGroup.Open())
+                {
+                    // Draw a transparent background to set the render size
+                    dc.DrawRectangle(Brushes.Black, null, new Rect(0.0, 0.0, this.displayWidthBody, this.displayHeightBody));
+
+                    int penIndex = 0;
+                    foreach (Body body in this.skeletons)
+                    {
+                        Pen drawPen = this.skeletonsColors[penIndex++];
+
+                        if (body.IsTracked)
+                        {
+                            this.DrawClippedEdges(body, dc);
+
+                            IReadOnlyDictionary<JointType, Joint> joints = body.Joints;
+
+                            // convert the joint points to depth (display) space
+                            Dictionary<JointType, Point> jointPoints = new Dictionary<JointType, Point>();
+
+                            foreach (JointType jointType in joints.Keys)
+                            {
+                                // sometimes the depth(Z) of an inferred joint may show as negative
+                                // clamp down to 0.1f to prevent coordinatemapper from returning (-Infinity, -Infinity)
+                                CameraSpacePoint position = joints[jointType].Position;
+                                if (position.Z < 0)
+                                {
+                                    position.Z = InferredZPositionClamp;
+                                }
+
+                                DepthSpacePoint depthSpacePoint = this.coordinateMapper.MapCameraPointToDepthSpace(position);
+                                jointPoints[jointType] = new Point(depthSpacePoint.X, depthSpacePoint.Y);
+                            }
+
+                            this.DrawBody(joints, jointPoints, dc, drawPen);
+                            this.DrawHand(body.HandLeftState, jointPoints[JointType.HandLeft], dc);
+                            this.DrawHand(body.HandRightState, jointPoints[JointType.HandRight], dc);
+                        }
+                    }
+
+                    // Draw only in the area visible for the camera
+                    this.drawingGroup.ClipGeometry = new RectangleGeometry(new Rect(0.0, 0.0, this.displayWidthBody, this.displayHeightBody));
+                }
+                // Send to our UI/Interface the created bodies to display in the Image:
+                FrameDisplayImage.Source = new DrawingImage(this.drawingGroup);
+
+            }
+        }
+
+        private void ShowColorFrame(ColorFrame colorFrame)
+        {
+            if (colorFrame != null)
+            {
+                FrameDescription colorFrameDescription = colorFrame.FrameDescription;
+
+                using (KinectBuffer colorBuffer = colorFrame.LockRawImageBuffer())
+                {
+                    this.bitmap.Lock();
+
+                    // verify data and write the new color frame data to the display bitmap
+                    if ((colorFrameDescription.Width == this.bitmap.PixelWidth) && (colorFrameDescription.Height == this.bitmap.PixelHeight))
+                    {
+                        colorFrame.CopyConvertedFrameDataToIntPtr(this.bitmap.BackBuffer, (uint)(colorFrameDescription.Width * colorFrameDescription.Height * 4),
+                            ColorImageFormat.Bgra);
+
+                        this.bitmap.AddDirtyRect(new Int32Rect(0, 0, this.bitmap.PixelWidth, this.bitmap.PixelHeight));
+                    }
+
+                    this.bitmap.Unlock();
+                    FrameDisplayImage.Source = this.bitmap;
+                }
+            }
+
+        }
 
         private void DrawTracked_Bodies(List<Body> tracked_bodies)
         {
@@ -183,7 +384,7 @@ namespace kinectSpaces
                             bodies_ids[fill_id] = current_id;
 
                             createBody(fieldOfView.ActualWidth / 2 + bodyX, bodyZ, bodyBrushes[fill_id]);
-                           // coord_body.Content = coordinatesFieldofView(tracked_bodies[new_id]);
+                            prop_coordinats_01.Content = coordinatesFieldofView(tracked_bodies[new_id]);
 
                             break;
                         }
@@ -202,10 +403,224 @@ namespace kinectSpaces
             // As the Kinect is mirrored we multiple by times -1
             double coord_x = Math.Round(current_body.Joints[JointType.SpineMid].Position.X, 2) * (-1);
 
-            return "Body Coordinates: X: " + coord_x + " Y: " + coord_y;
+            return "X: " + coord_x + " Y: " + coord_y;
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+     
+
+        // ***************************************************************************//
+        // ************************* BODY DATA PROCESSING **************************//
+
+        /// <summary>
+        /// Draws a body
+        /// </summary>
+        private void DrawBody(IReadOnlyDictionary<JointType, Joint> joints, IDictionary<JointType, Point> jointPoints, DrawingContext drawingContext, Pen drawingPen)
+        {
+            // Draw the bones
+            foreach (var bone in this.bones)
+            {
+                this.DrawBone(joints, jointPoints, bone.Item1, bone.Item2, drawingContext, drawingPen);
+            }
+
+            // Draw the joints
+            foreach (JointType jointType in joints.Keys)
+            {
+                Brush drawBrush = null;
+
+                TrackingState trackingState = joints[jointType].TrackingState;
+
+                if (trackingState == TrackingState.Tracked)
+                {
+                    drawBrush = this.trackedJointBrush;
+                }
+                else if (trackingState == TrackingState.Inferred)
+                {
+                    drawBrush = this.inferredJointBrush;
+                }
+
+                if (drawBrush != null)
+                {
+                    drawingContext.DrawEllipse(drawBrush, null, jointPoints[jointType], JointThickness, JointThickness);
+                }
+            }
+        }
+
+        /// Draws one bone of a body (joint to joint)
+        private void DrawBone(IReadOnlyDictionary<JointType, Joint> joints, IDictionary<JointType, Point> jointPoints, JointType jointType0, JointType jointType1, DrawingContext drawingContext, Pen drawingPen)
+        {
+            // A bone results from the union of two joints/vertices
+            Joint joint0 = joints[jointType0];
+            Joint joint1 = joints[jointType1];
+
+            // If we can't find either of these joints, we cannot draw them! Exit
+            if (joint0.TrackingState == TrackingState.NotTracked ||
+                joint1.TrackingState == TrackingState.NotTracked)
+            {
+                return;
+            }
+
+            // We assume all drawn bones are inferred unless BOTH joints are tracked
+            Pen drawPen = this.inferredBonePen;
+            if ((joint0.TrackingState == TrackingState.Tracked) && (joint1.TrackingState == TrackingState.Tracked))
+            {
+                drawPen = drawingPen;
+            }
+
+            drawingContext.DrawLine(drawPen, jointPoints[jointType0], jointPoints[jointType1]);
+        }
+
+        /// Draws a hand symbol if the hand is tracked: red circle = closed, green circle = opened; blue circle = lasso ergo pointing
+        private void DrawHand(HandState handState, Point handPosition, DrawingContext drawingContext)
+        {
+            switch (handState)
+            {
+                case HandState.Closed:
+                    drawingContext.DrawEllipse(this.handClosedBrush, null, handPosition, HandSize, HandSize);
+                    break;
+
+                case HandState.Open:
+                    drawingContext.DrawEllipse(this.handOpenBrush, null, handPosition, HandSize, HandSize);
+                    break;
+
+                case HandState.Lasso:
+                    drawingContext.DrawEllipse(this.handLassoBrush, null, handPosition, HandSize, HandSize);
+                    break;
+            }
+        }
+
+        /// Draws indicators to show which edges are clipping body data
+        private void DrawClippedEdges(Body body, DrawingContext drawingContext)
+        {
+            FrameEdges clippedEdges = body.ClippedEdges;
+
+            if (clippedEdges.HasFlag(FrameEdges.Bottom))
+            {
+                drawingContext.DrawRectangle(
+                    Brushes.Indigo,
+                    null,
+                    new Rect(0, this.displayHeightBody - ClipBoundsThickness, this.displayWidthBody, ClipBoundsThickness));
+            }
+
+            if (clippedEdges.HasFlag(FrameEdges.Top))
+            {
+                drawingContext.DrawRectangle(
+                    Brushes.Indigo,
+                    null,
+                    new Rect(0, 0, this.displayWidthBody, ClipBoundsThickness));
+            }
+
+            if (clippedEdges.HasFlag(FrameEdges.Left))
+            {
+                drawingContext.DrawRectangle(
+                    Brushes.Indigo,
+                    null,
+                    new Rect(0, 0, ClipBoundsThickness, this.displayHeightBody));
+            }
+
+            if (clippedEdges.HasFlag(FrameEdges.Right))
+            {
+                drawingContext.DrawRectangle(
+                    Brushes.Indigo,
+                    null,
+                    new Rect(this.displayWidthBody - ClipBoundsThickness, 0, ClipBoundsThickness, this.displayHeightBody));
+            }
+        }
+
+        /// <summary>
+        ///  This colors are for the bodies detected by the camera, for the Kinect V2 a maximum of 6
+        /// </summary>
+        private void skeletonsIndexColors()
+        {
+
+            this.skeletonsColors.Add(new Pen(Brushes.Red, 6));
+            this.skeletonsColors.Add(new Pen(Brushes.Coral, 6));
+            this.skeletonsColors.Add(new Pen(Brushes.Green, 6));
+            this.skeletonsColors.Add(new Pen(Brushes.Blue, 6));
+            this.skeletonsColors.Add(new Pen(Brushes.Indigo, 6));
+            this.skeletonsColors.Add(new Pen(Brushes.Violet, 6));
+
+        }
+
+        private void ellipseIndexColors()
+        {
+
+            this.bodyBrushes.Add(Brushes.Red);
+            this.bodyBrushes.Add(Brushes.Black);
+            this.bodyBrushes.Add(Brushes.Green);
+            this.bodyBrushes.Add(Brushes.Blue);
+            this.bodyBrushes.Add(Brushes.Indigo);
+            this.bodyBrushes.Add(Brushes.Violet);
+
+        }
+
+        /// <summary>
+        /// Define which parts are connected between them
+        /// </summary>
+        private void defineBoneParts()
+        {
+            // Torso
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.Head, JointType.Neck));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.Neck, JointType.SpineShoulder));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.SpineShoulder, JointType.SpineMid));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.SpineMid, JointType.SpineBase));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.SpineShoulder, JointType.ShoulderRight));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.SpineShoulder, JointType.ShoulderLeft));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.SpineBase, JointType.HipRight));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.SpineBase, JointType.HipLeft));
+
+            // Right Arm
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.ShoulderRight, JointType.ElbowRight));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.ElbowRight, JointType.WristRight));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.WristRight, JointType.HandRight));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.HandRight, JointType.HandTipRight));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.WristRight, JointType.ThumbRight));
+
+            // Left Arm
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.ShoulderLeft, JointType.ElbowLeft));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.ElbowLeft, JointType.WristLeft));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.WristLeft, JointType.HandLeft));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.HandLeft, JointType.HandTipLeft));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.WristLeft, JointType.ThumbLeft));
+
+            // Right Leg
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.HipRight, JointType.KneeRight));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.KneeRight, JointType.AnkleRight));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.AnkleRight, JointType.FootRight));
+
+            // Left Leg
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.HipLeft, JointType.KneeLeft));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.KneeLeft, JointType.AnkleLeft));
+            this.bones.Add(new Tuple<JointType, JointType>(JointType.AnkleLeft, JointType.FootLeft));
+
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            if (this.multiSourceFrameReader != null)
+            {
+                // BodyFrameReader is IDisposable
+                this.multiSourceFrameReader.Dispose();
+                this.multiSourceFrameReader = null;
+            }
+
+            if (this.kinectSensor != null)
+            {
+                this.kinectSensor.Close();
+                this.kinectSensor = null;
+            }
+        }
+
+        private void RGB_Click(object sender, RoutedEventArgs e)
+        {
+            SetupCurrentDisplay(DisplayFrameType.Color);
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            SetupCurrentDisplay(DisplayFrameType.Body);
+        }
+
+        private void Window_Loaded_1(object sender, RoutedEventArgs e)
         {
             // Draw Kinect Vision Area based on the size of our canvas
             int canvasHeight = (int)fieldOfView.ActualHeight;
@@ -228,37 +643,20 @@ namespace kinectSpaces
 
             Polygon myPolygon = new Polygon();
             myPolygon.Points = myPointCollection;
-            myPolygon.Fill = Brushes.Purple;
+            myPolygon.Fill = Brushes.Gold;
             myPolygon.Width = canvasWidth;
             myPolygon.Height = canvasHeight;
             myPolygon.Stretch = Stretch.Fill;
-            myPolygon.Stroke = Brushes.Purple;
+            myPolygon.Stroke = Brushes.Gold;
             myPolygon.StrokeThickness = 1;
-            myPolygon.Opacity = 0.2;
+            myPolygon.Opacity = 0.85;
+            
 
             //Add the triangle in our canvas
+            gridTriangle.Width = canvasWidth;
+            gridTriangle.Height = canvasHeight;
             gridTriangle.Children.Add(myPolygon);
-        }
-
-        private void Window_Closed(object sender, EventArgs e)
-        {
-            if (this.multiSourceFrameReader != null)
-            {
-                // BodyFrameReader is IDisposable
-                this.multiSourceFrameReader.Dispose();
-                this.multiSourceFrameReader = null;
-            }
-
-            if (this.kinectSensor != null)
-            {
-                this.kinectSensor.Close();
-                this.kinectSensor = null;
-            }
-        }
-
-        private void RGB_Click(object sender, RoutedEventArgs e)
-        {
-
+            
         }
     }
 }
