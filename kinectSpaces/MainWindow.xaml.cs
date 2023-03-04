@@ -35,7 +35,9 @@ namespace kinectSpaces
         private DrawingGroup drawingGroup;
         private DrawingImage imageSource;
         private MultiSourceFrameReader multiSourceFrameReader = null;
-        private const DisplayFrameType DEFAULT_DISPLAYFRAMETYPE = DisplayFrameType.Color;
+        private const DisplayFrameType DEFAULT_DISPLAYFRAMETYPE = DisplayFrameType.Body;
+        private int totalVisits = 0;
+
 
 
         // Visualization - RGB
@@ -72,10 +74,6 @@ namespace kinectSpaces
         List<Brush> bodyBrushes = new List<Brush>();
         public double dperPixZ = 0;
         public double dperPixX = 0;
-
-
-        // Data - Bodies
-        List<bodyItems> bodiesTable = new List<bodyItems>();
         public MainWindow()
         {
             // Initialize the sensor
@@ -85,17 +83,14 @@ namespace kinectSpaces
 
             SetupCurrentDisplay(DEFAULT_DISPLAYFRAMETYPE);
 
-
             // Trajectories
             this.drawingGroup = new DrawingGroup();
             this.imageSource = new DrawingImage(this.drawingGroup);
-
-
             this.ellipseIndexColors();
-            // Object with the information
             this.DataContext = this;
 
             this.kinectSensor.Open();
+
             InitializeComponent();
         }
 
@@ -139,6 +134,14 @@ namespace kinectSpaces
                 default:
                     break;
             }
+        }
+
+        private void setExperimentData(){
+
+            details_start.Content= $"Start Time: {DateTime.Now.ToString("yyy-MM-dd HH:mm:ss")}";
+            //Console.WriteLine($"Camera ID: {kinectSensor.UniqueKinectId}");
+            //details_cameraid.Content = $"Camera ID: {kinectSensor.UniqueKinectId}";
+            details_totaldetected.Content = "Total people detected: 0";
         }
 
         public FrameDescription CurrentFrameDescription
@@ -185,19 +188,19 @@ namespace kinectSpaces
             MultiSourceFrame multiSourceFrame = e.FrameReference.AcquireFrame();
             BodyFrame bodyFrame = multiSourceFrame.BodyFrameReference.AcquireFrame();
 
-            using (bodyFrame)
-            {
+            using (bodyFrame) {
                 if (bodyFrame != null)
                 {
 
                     //Get the number the bodies in the scene
                     bodies = new Body[bodyFrame.BodyFrameSource.BodyCount];
 
+
                     bodyFrame.GetAndRefreshBodyData(bodies);
 
                     List<Body> tracked_bodies = bodies.Where(body => body.IsTracked == true).ToList();
 
-                    // Here we draw the path travelled during the session with pixel size traces
+                     // Here we draw the path travelled during the session with pixel size traces
                     var moves = fieldOfView.Children.OfType<Ellipse>().ToList();
                     foreach (Ellipse ellipse in moves)
                     {
@@ -351,6 +354,7 @@ namespace kinectSpaces
                 if (!is_tracked)
                 {
                     bodies_ids[last_id] = 0;
+                    
                 }
             }
 
@@ -374,9 +378,7 @@ namespace kinectSpaces
                     {
                         is_tracked = true;
                         createBody(fieldOfView.ActualWidth / 2 + bodyX, bodyZ, bodyBrushes[exist_id]);
-                        bodiesTable.Add(new bodyItems {bodyID=current_id.ToString(), bodyCoordinates= coordinatesFieldofView(tracked_bodies[new_id]), bodyOrientation="0" });
-
-                        bodyData.ItemsSource = bodiesTable;
+                        updateTable(exist_id, new_id, tracked_bodies, current_id);
                         break;
                     }
                 }
@@ -384,29 +386,87 @@ namespace kinectSpaces
                 // If not previously tracked, then fill first empty spot in the list of tracking bodies
                 if (!is_tracked)
                 {
+                    totalVisits++;
                     for (int fill_id = 0; fill_id < 6; fill_id++)
                     {
                         if (bodies_ids[fill_id] == 0)
                         {
                             bodies_ids[fill_id] = current_id;
-
                             createBody(fieldOfView.ActualWidth / 2 + bodyX, bodyZ, bodyBrushes[fill_id]);
-                            bodiesTable.Add(new bodyItems { bodyID = current_id.ToString(), bodyCoordinates = coordinatesFieldofView(tracked_bodies[new_id]), bodyOrientation = "0" });
-
-                            bodyData.ItemsSource = bodiesTable;
-
+                            updateTable(fill_id, new_id, tracked_bodies, current_id);
                             break;
                         }
                     }
                 }
             }
+
+            details_totaldetected.Content = $"Total people detected: {totalVisits}";
         }
 
-        class bodyItems
+        private void updateTable(int exist_id, int new_id, List<Body> tracked_bodies, ulong current_id) {
+           
+            switch (exist_id)
+            {
+                case 0:
+                    prop_coordinats_01.Content = coordinatesFieldofView(tracked_bodies[new_id]);
+                    prop_orientation_01.Content = getBodyOrientation(tracked_bodies[new_id]);
+                    prop_bodyid_01.Content = current_id;
+                    break;
+
+                case 1:
+                    prop_coordinats_02.Content = coordinatesFieldofView(tracked_bodies[new_id]);
+                    prop_orientation_02.Content = getBodyOrientation(tracked_bodies[new_id]);
+                    prop_bodyid_02.Content = current_id;
+                    break;
+
+                case 2:
+                    prop_coordinats_03.Content = coordinatesFieldofView(tracked_bodies[new_id]);
+                    prop_orientation_03.Content = getBodyOrientation(tracked_bodies[new_id]);
+                    prop_bodyid_03.Content = current_id;
+                    break;
+
+                case 3:
+                    prop_coordinats_04.Content = coordinatesFieldofView(tracked_bodies[new_id]);
+                    prop_orientation_04.Content = getBodyOrientation(tracked_bodies[new_id]);
+                    prop_bodyid_04.Content = current_id;
+                    break;
+
+                case 4:
+                    prop_coordinats_05.Content = coordinatesFieldofView(tracked_bodies[new_id]);
+                    prop_orientation_05.Content = getBodyOrientation(tracked_bodies[new_id]);
+                    prop_bodyid_05.Content = current_id;
+                    break;
+
+                case 5:
+                    prop_coordinats_06.Content = coordinatesFieldofView(tracked_bodies[new_id]);
+                    prop_orientation_06.Content = getBodyOrientation(tracked_bodies[new_id]);
+                    prop_bodyid_06.Content = current_id;
+                    break;
+
+                default:
+                    break;
+            }
+
+        }
+
+
+        public double getBodyOrientation(Body bodyData)
         {
-            public string bodyID { get; set; }
-            public string bodyOrientation { get; set; }
-            public string bodyCoordinates { get; set; }
+
+            double x = bodyData.Joints[JointType.ShoulderRight].Position.X- bodyData.Joints[JointType.ShoulderLeft].Position.X;
+            double y = bodyData.Joints[JointType.ShoulderRight].Position.Z - bodyData.Joints[JointType.ShoulderLeft].Position.Z;
+
+            double angle = Math.Round(Math.Atan(y/x)*(180/Math.PI),2);
+
+            if (bodyData.Joints[JointType.ShoulderRight].Position.X < bodyData.Joints[JointType.ShoulderLeft].Position.X) {
+                angle = angle - 90.0;
+            }
+            else
+            {
+                angle = angle + 90.0;
+            }
+            
+            return angle;
         }
 
         private string coordinatesFieldofView(Body current_body)
@@ -422,7 +482,7 @@ namespace kinectSpaces
             return "X: " + coord_x + " Y: " + coord_y;
         }
 
-
+     
 
         // ***************************************************************************//
         // ************************* BODY DATA PROCESSING **************************//
@@ -548,11 +608,11 @@ namespace kinectSpaces
         private void skeletonsIndexColors()
         {
 
-            this.skeletonsColors.Add(new Pen(Brushes.Red, 6));
-            this.skeletonsColors.Add(new Pen(Brushes.Coral, 6));
-            this.skeletonsColors.Add(new Pen(Brushes.Green, 6));
-            this.skeletonsColors.Add(new Pen(Brushes.Blue, 6));
-            this.skeletonsColors.Add(new Pen(Brushes.Indigo, 6));
+            this.skeletonsColors.Add(new Pen(Brushes.Red, 4));
+            this.skeletonsColors.Add(new Pen(Brushes.Coral, 4));
+            this.skeletonsColors.Add(new Pen(Brushes.Green, 4));
+            this.skeletonsColors.Add(new Pen(Brushes.Blue, 4));
+            this.skeletonsColors.Add(new Pen(Brushes.Indigo, 4));
             this.skeletonsColors.Add(new Pen(Brushes.Violet, 6));
 
         }
@@ -561,7 +621,7 @@ namespace kinectSpaces
         {
 
             this.bodyBrushes.Add(Brushes.Red);
-            this.bodyBrushes.Add(Brushes.Black);
+            this.bodyBrushes.Add(Brushes.Coral);
             this.bodyBrushes.Add(Brushes.Green);
             this.bodyBrushes.Add(Brushes.Blue);
             this.bodyBrushes.Add(Brushes.Indigo);
@@ -610,34 +670,7 @@ namespace kinectSpaces
 
         }
 
-        private void Window_Closed(object sender, EventArgs e)
-        {
-            if (this.multiSourceFrameReader != null)
-            {
-                // BodyFrameReader is IDisposable
-                this.multiSourceFrameReader.Dispose();
-                this.multiSourceFrameReader = null;
-            }
-
-            if (this.kinectSensor != null)
-            {
-                this.kinectSensor.Close();
-                this.kinectSensor = null;
-            }
-        }
-
-        private void RGB_Click(object sender, RoutedEventArgs e)
-        {
-            SetupCurrentDisplay(DisplayFrameType.Color);
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            SetupCurrentDisplay(DisplayFrameType.Body);
-        }
-
-        private void Window_Loaded_1(object sender, RoutedEventArgs e)
-        {
+        private void drawVisionArea() {
             // Draw Kinect Vision Area based on the size of our canvas
             int canvasHeight = (int)fieldOfView.ActualHeight;
             int canvasWidth = (int)fieldOfView.ActualWidth;
@@ -672,7 +705,51 @@ namespace kinectSpaces
             gridTriangle.Width = canvasWidth;
             gridTriangle.Height = canvasHeight;
             gridTriangle.Children.Add(myPolygon);
+        }
 
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            if (this.multiSourceFrameReader != null)
+            {
+                // BodyFrameReader is IDisposable
+                this.multiSourceFrameReader.Dispose();
+                this.multiSourceFrameReader = null;
+            }
+
+            if (this.kinectSensor != null)
+            {
+                this.kinectSensor.Close();
+                this.kinectSensor = null;
+            }
+        }
+
+        private void RGB_Click(object sender, RoutedEventArgs e)
+        {
+            SetupCurrentDisplay(DisplayFrameType.Color);
+            RGBButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF9B9BA5"));
+            SkeletonButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF3F3F46"));
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            SetupCurrentDisplay(DisplayFrameType.Body);
+            RGBButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF3F3F46"));
+            SkeletonButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF9B9BA5"));
+        }
+
+        private void Window_Loaded_1(object sender, RoutedEventArgs e)
+        {
+
+            setExperimentData();
+
+            drawVisionArea();
+            
+        }
+
+        private void CloseWindow_Clic(object sender, RoutedEventArgs e)
+        {
+            Close();
+            
         }
     }
 }

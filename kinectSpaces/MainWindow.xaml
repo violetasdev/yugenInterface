@@ -10,15 +10,19 @@
         Left="100"
         Height="800"
         Width="1200" 
-        Background="#FF2D2D30" Closed="Window_Closed" Loaded="Window_Loaded_1">
+        Background="#FF2D2D30" 
+        Closed="Window_Closed" 
+        Loaded="Window_Loaded_1" 
+        WindowState="Maximized"
+        WindowStyle="None">
 
     <Grid UseLayoutRounding="True">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="143*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="5"/>
             <RowDefinition Height="10"/>
+            <RowDefinition Height="25"/>
             <RowDefinition Height="10"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition/>
@@ -28,6 +32,9 @@
 
             </MenuItem>
         </Menu>
+        <Grid Grid.Row="1">
+            <Button x:Name="CloseWindow" Content="X" HorizontalAlignment="Right" Margin="1165,0,10,0" VerticalAlignment="Top" Width="21" Height="21" Background="#FFE84C4C" Foreground="White" FontSize="8" FontWeight="Bold" Click="CloseWindow_Clic"/>
+        </Grid>
         <!--ToolBarTray Grid.Row="3" HorizontalAlignment="Left" Height="35" VerticalAlignment="Top" Width="1019" Grid.ColumnSpan="2" Margin="0,0.111,0,0" Background="#FF3F3F46">
             <ToolBar  Background="#FF1A4F8B">
                 <Button Margin="1" ToolTip="Open Store">
@@ -37,7 +44,7 @@
         </ToolBarTray-->
         <Grid Grid.Row="4" Background="#FF3F3F46" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MinWidth="250"/>
+                <ColumnDefinition Width="*" MinWidth="150"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*" MinWidth="650"/>
                 <ColumnDefinition Width="Auto"/>
@@ -53,21 +60,89 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
+                <Grid.Resources>
+                    <ResourceDictionary>
+                        <Style  TargetType="{x:Type TabItem}">
+                            <Setter Property="OverridesDefaultStyle" Value="True"/>
+                            <Setter Property="SnapsToDevicePixels" Value="True"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Background" Value="#FF7C0000"/>
+                            <Setter Property="BorderBrush" Value="White"/>
+                            <Setter Property="Height" Value="32"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type TabItem}">
+                                        <Border x:Name="Border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" Margin="0,0,-1,0">
+                                            <Grid >
+                                                <Rectangle x:Name="interactive" Opacity="0.3"/>
+                                                <ContentPresenter HorizontalAlignment="Center" Margin="12,2,12,2" x:Name="ContentSite" VerticalAlignment="Center" RecognizesAccessKey="True" ContentSource="Header" />
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="Panel.ZIndex" Value="100"/>
+                                                <Setter Property="Background" Value="White" />
+                                            </Trigger>
+                                            <MultiTrigger>
+                                                <MultiTrigger.Conditions>
+                                                    <Condition Property="IsMouseOver" Value="True"/>
+                                                    <Condition Property="Selector.IsSelected" Value="False"/>
+                                                </MultiTrigger.Conditions>
+                                                <Setter Property="Fill" Value="White" TargetName="interactive"/>
+                                            </MultiTrigger>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Opacity" Value="0.5" TargetName="interactive" />
+                                                <Setter Property="Fill" Value="White" TargetName="interactive" />
+                                                <Setter Property="Background" Value="White"/>
+                                                <Setter Property="Foreground" Value="DarkGray"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                        <Style TargetType="{x:Type TabControl}">
+                            <Setter Property="Background" Value="Black"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type TabControl}">
+                                        <Grid KeyboardNavigation.TabNavigation="Local">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
+                                            <TabPanel Grid.Row="0" IsItemsHost="True" Panel.ZIndex="1" KeyboardNavigation.TabIndex="1"/>
+                                            <Border Padding="12" Background="{TemplateBinding Background}"
+                                                Grid.Row="1"  KeyboardNavigation.DirectionalNavigation="Contained" KeyboardNavigation.TabNavigation="Local" KeyboardNavigation.TabIndex="2">
+                                                <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent"/>
+                                            </Border>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ResourceDictionary>
+                </Grid.Resources>
+
                 <Grid Grid.Row="0" Background="#FF3F3F46">
+                    
+                    
                     <TabControl Grid.Row="0" Name="DatasetsTabControl" SelectedIndex="0" Margin="4,4,0,4" Background="#FF2D2D30" Foreground="White" BorderBrush="#FF2D2D30">
+
                         <!--TabItem Name="Scene_info" Header="Scene Information" Background="#FF252526" BorderBrush="#FF2D2D30" Foreground="White"-->
-                        <TabItem Name="Scene_info" Header="Scene Information" Background="#FF2D2D30" BorderBrush="#FF2D2D30" Foreground="Black">
-                            <Border Background="#FF2D2D30" Margin="0" Padding="0">
+                        <TabItem Name="Scene_info" Header="Scene Information" Background="#FF323232" BorderBrush="#FF383838" Foreground="White">
+                            <Border Background="#FF2D2D30" Margin="0,-3,0,3" Padding="0">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="50"/>
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
 
-                                    <Grid Grid.Row="0">
-                                        <Label Content="SOS detection" FontSize="25" Foreground="White" HorizontalAlignment="Center"/>
+                                    <Grid Grid.Row="0" Margin="0,0,0,138" Grid.RowSpan="2">
+                                        <Label Content="YUGEN" FontSize="24" Foreground="White" HorizontalAlignment="Center" FontFamily="Perpetua Titling MT" Margin="217,0,217,37" Width="96"/>
+                                        <Label Content="Revealing group behavior through depth" Foreground="White" HorizontalAlignment="Center" FontFamily="Perpetua" Margin="128,33,122,0" Width="280" FontSize="18" />
                                     </Grid>
-                                    <Grid Grid.Row="1">
+                                    <Grid Grid.Row="1" Margin="0,41,0,-41">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="36"></RowDefinition>
                                             <RowDefinition Height="30"></RowDefinition>
@@ -75,9 +150,9 @@
                                             <RowDefinition Height="30"></RowDefinition>
                                         </Grid.RowDefinitions>
                                         <Label Grid.Row="0" Content="Experiment details" FontSize="16" Foreground="White" Margin="0,0,0,5" HorizontalAlignment="Left"/>
-                                        <Label x:Name="details_start" Grid.Row="1" Content="Start time:" FontSize="12" Foreground="White" Margin="0,0,0,18" Grid.RowSpan="2" HorizontalAlignment="Left"/>
-                                        <Label x:Name="details_cameraid" Grid.Row="2" Content="Camera ID:" FontSize="12" Foreground="White" HorizontalAlignment="Left"/>
-                                        <Label x:Name="details_totaldetected" Grid.Row="3" Content="Total people detected:" FontSize="12" Foreground="White" HorizontalAlignment="Left"/>
+                                        <Label x:Name="details_start" Grid.Row="1" FontSize="12" Foreground="White" Margin="0,0,0,18" Grid.RowSpan="2" HorizontalAlignment="Left"/>
+                                        <Label x:Name="details_cameraid" Content="Camera ID: Kinect V2 01" Grid.Row="2"  FontSize="12" Foreground="White" HorizontalAlignment="Left"/>
+                                        <Label x:Name="details_totaldetected" Grid.Row="3"  FontSize="12" Foreground="White" HorizontalAlignment="Left"/>
                                     </Grid>
                                 </Grid>
                             </Border>
@@ -88,17 +163,146 @@
                 <GridSplitter Grid.Row="1" Height="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Background="#FF3F3F46"/>
 
                 <Grid Grid.Row="3" Background="#FF3F3F46">
-                    <TabControl Name="BodiesTabControl" SelectedIndex="0" Margin="4,4,0,4" Background="#FF2D2D30" Foreground="White" BorderBrush="#FF2D2D30">
+                    <TabControl Name="BodiesTabControl" SelectedIndex="0" Margin="4,4,0,4" Background="#FF2D2D30" Foreground="White" BorderBrush="#FF2D2D30" >
                         <TabItem Name="Bodies" Header="Properties" Background="#FF2D2D30" BorderBrush="#FF2D2D30" Foreground="Black">
                             <Border Background="#FF2D2D30" Margin="0" Padding="0">
                                 <Grid>
-                                    <DataGrid Name="bodyData" ItemsSource="{Binding}" AutoGenerateColumns="False" Background="#FF3F3F46" BorderBrush="#FF2D2D30" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" CanUserResizeColumns="False" CanUserReorderColumns="False" >
-                                        <DataGrid.Columns>
-                                            <DataGridTextColumn Width="*" Header="Body ID"  Binding="{Binding bodyID}"/>
-                                            <DataGridTextColumn Width="*" Header="Orientation" Binding="{Binding bodyOrientation}" />
-                                            <DataGridTextColumn Width="*" Header="Coordinates" Binding="{Binding bodyCoordinates}" />
-                                        </DataGrid.Columns>
-                                    </DataGrid>
+
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                    </Grid.RowDefinitions>
+
+                                    <Grid Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid Grid.Column="0">
+                                            <Label x:Name="prop_bodyid_00" Grid.Row="0" Content="Body ID" FontSize="12" Foreground="White" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                        </Grid>
+                                        <Grid Grid.Column="1">
+                                            <Label x:Name="prop_orientation_00" Grid.Row="0" Content="Orientation" FontSize="12" Foreground="White" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                        </Grid>
+                                        <Grid Grid.Column="2">
+                                            <Label x:Name="prop_coordinats_00" Grid.Row="0" Content="Coordinates" FontSize="12" Foreground="White" HorizontalAlignment="Center" FontWeight="Bold"/>
+                                        </Grid>
+                                    </Grid>
+
+
+                                    <Grid Grid.Row="1" Background="#FF1B1B1D">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Grid Grid.Column="0">
+                                            <Label x:Name="prop_bodyid_01" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="1">
+                                            <Label x:Name="prop_orientation_01" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="2">
+                                            <Label x:Name="prop_coordinats_01" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <Grid Grid.Row="2" >
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Grid Grid.Column="0">
+                                            <Label x:Name="prop_bodyid_02" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="1">
+                                            <Label x:Name="prop_orientation_02" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="2">
+                                            <Label x:Name="prop_coordinats_02" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <Grid Grid.Row="3" Background="#FF1B1B1D">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Grid Grid.Column="0">
+                                            <Label x:Name="prop_bodyid_03" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="1">
+                                            <Label x:Name="prop_orientation_03" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="2">
+                                            <Label x:Name="prop_coordinats_03" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <Grid Grid.Row="4" >
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Grid Grid.Column="0">
+                                            <Label x:Name="prop_bodyid_04" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="1">
+                                            <Label x:Name="prop_orientation_04" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="2">
+                                            <Label x:Name="prop_coordinats_04" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <Grid Grid.Row="5" Background="#FF1B1B1D">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Grid Grid.Column="0">
+                                            <Label x:Name="prop_bodyid_05" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="1">
+                                            <Label x:Name="prop_orientation_05" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="2">
+                                            <Label x:Name="prop_coordinats_05" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <Grid Grid.Row="6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                            <ColumnDefinition Width="*" ></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Grid Grid.Column="0">
+                                            <Label x:Name="prop_bodyid_06" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="1">
+                                            <Label x:Name="prop_orientation_06" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                        <Grid Grid.Column="2">
+                                            <Label x:Name="prop_coordinats_06" Grid.Row="0" Content="" FontSize="12" Foreground="White" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
                                 </Grid>
                             </Border>
                         </TabItem>
@@ -109,8 +313,12 @@
             <GridSplitter Grid.Column="1" Width="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" Background="#FF3F3F46"/>
 
             <Grid Grid.Column="2" Background="#FF3F3F46">
-                <TabControl Name="CanvasTabControl" SelectedIndex="0" Margin="0,4,0,4" Background="#FF2D2D30" Foreground="White" BorderBrush="#FF2D2D30">
-                    <TabItem Name="CanvasVisualization" Header="Visualization" Background="#FF2D2D30" Foreground="Black" BorderBrush="#FF2D2D30">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="115*"/>
+                    <RowDefinition Height="656*"/>
+                </Grid.RowDefinitions>
+                <TabControl Name="CanvasTabControl" SelectedIndex="0" Margin="0,4,0,4" Background="#FF2D2D30" Foreground="White" BorderBrush="#FF2D2D30" Grid.RowSpan="2">
+                    <TabItem Name="CanvasVisualization" Header="Visualization" Background="#FF2D2D30" Foreground="Black" BorderBrush="#FF2D2D30" IsSelected="True">
                         <Border Background="Black" Margin="0" Padding="0">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -121,8 +329,8 @@
                                 </Grid.RowDefinitions>
 
                                 <Grid Grid.Row="0">
-                                    <Button Content="RGB" HorizontalAlignment="Left" Margin="24,10,0,0" VerticalAlignment="Top" Width="75" Click="RGB_Click"/>
-                                    <Button Content="Skeleton" HorizontalAlignment="Left" Margin="119,10,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
+                                    <Button x:Name="RGBButton" Content="RGB" HorizontalAlignment="Left" Margin="24,10,0,0" VerticalAlignment="Top" Width="75" Click="RGB_Click" Background="#FF9B9BA5" Foreground="White" BorderBrush="#FF3F3F46"/>
+                                    <Button x:Name="SkeletonButton" Content="Skeleton" HorizontalAlignment="Left" Margin="119,10,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click" Background="#FF3F3F46" BorderBrush="#FF3F3F46" Foreground="White"/>
                                 </Grid>
 
                                 <Grid Grid.Row="1" >
@@ -134,8 +342,8 @@
                                 <GridSplitter Grid.Row="2" Height="3" VerticalAlignment="Center" HorizontalAlignment="Stretch" Background="#FF3F3F46"/>
 
                                 <Grid Grid.Row="3" x:Name="gridTriangle" Background="Black">
-                                        <Canvas x:Name="fieldOfView" Panel.ZIndex="10">
-                                        </Canvas>
+                                    <Canvas x:Name="fieldOfView" Panel.ZIndex="10">
+                                    </Canvas>
                                 </Grid>
                             </Grid>
                         </Border>
@@ -154,5 +362,6 @@
                 </TabControl>
             </Grid-->
         </Grid>
+        
     </Grid>
 </Window>
