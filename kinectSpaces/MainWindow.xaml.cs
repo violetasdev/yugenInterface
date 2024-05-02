@@ -13,8 +13,16 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
+using Json = Newtonsoft.Json;
+using System.IO;
+using System.Timers;
+
+
 using System.ComponentModel;
 using Microsoft.Kinect;
+using System.Xml;
+using System.Data;
+using Newtonsoft.Json;
 
 namespace kinectSpaces
 {
@@ -35,7 +43,7 @@ namespace kinectSpaces
         private DrawingGroup drawingGroup;
         private DrawingImage imageSource;
         private MultiSourceFrameReader multiSourceFrameReader = null;
-        private const DisplayFrameType DEFAULT_DISPLAYFRAMETYPE = DisplayFrameType.Body;
+        private const DisplayFrameType DEFAULT_DISPLAYFRAMETYPE = DisplayFrameType.Color;
         private int totalVisits = 0;
 
 
@@ -71,9 +79,15 @@ namespace kinectSpaces
         //  Visualization - Movement
         private Body[] bodies = null;
         ulong[] bodies_ids = { 0, 0, 0, 0, 0, 0 };
-        List<Brush> bodyBrushes = new List<Brush>();
+        List<Brush> ellipseBrushes = new List<Brush>();
         public double dperPixZ = 0;
         public double dperPixX = 0;
+
+
+        private Timer saveTimer;
+        private List<object> periodicDataStorage = new List<object>();
+
+
         public MainWindow()
         {
             // Initialize the sensor
@@ -92,9 +106,21 @@ namespace kinectSpaces
             this.kinectSensor.Open();
 
             InitializeComponent();
+
+            saveTimer = new Timer(3600000); // Set the interval to 1800000 milliseconds (30 minutes)
+            saveTimer.Elapsed += OnTimedEvent;
+            saveTimer.AutoReset = true;
+            saveTimer.Enabled = true;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnTimedEvent(Object source, ElapsedEventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(() => {
+                SaveSkeletonData();  // Save the accumulated data
+            });
+        }
 
         private void SetupCurrentDisplay(DisplayFrameType newDisplayFrameType)
         {
@@ -198,6 +224,11 @@ namespace kinectSpaces
 
                     bodyFrame.GetAndRefreshBodyData(bodies);
 
+                    // Save skeleton data to file
+
+                    StoreSkeletonData(bodies);  // Save data to a file
+
+
                     List<Body> tracked_bodies = bodies.Where(body => body.IsTracked == true).ToList();
 
                      // Here we draw the path travelled during the session with pixel size traces
@@ -267,7 +298,7 @@ namespace kinectSpaces
                     int penIndex = 0;
                     foreach (Body body in this.skeletons)
                     {
-                        Pen drawPen = this.skeletonsColors[penIndex++];
+                        Pen drawPen = this.skeletonsColors[penIndex];
 
                         if (body.IsTracked)
                         {
@@ -296,6 +327,9 @@ namespace kinectSpaces
                             this.DrawHand(body.HandLeftState, jointPoints[JointType.HandLeft], dc);
                             this.DrawHand(body.HandRightState, jointPoints[JointType.HandRight], dc);
                         }
+
+                        penIndex++;
+
                     }
 
                     // Draw only in the area visible for the camera
@@ -362,8 +396,12 @@ namespace kinectSpaces
             for (int new_id = 0; new_id < tracked_bodies.Count; new_id++)
             {
                 dperPixZ = (double)fieldOfView.ActualHeight / 5000;
-                double bodyX = tracked_bodies[new_id].Joints[JointType.SpineMid].Position.X * dperPixZ * 1000 * (-1);
-                double bodyZ = tracked_bodies[new_id].Joints[JointType.SpineMid].Position.Z * dperPixZ * 1000;
+                double bodyX = tracked_bodies[new_id].Joints[JointType.SpineMid].Position.X * dperPixZ * 1000 ;
+                double bodyZ = tracked_bodies[new_id].Joints[JointType.SpineMid].Position.Z * dperPixZ * 1000 ;
+
+                // This is flipped so in the triangle vision area, the movement is more visible on how we naturally move
+
+                double flippedBodyZ = fieldOfView.ActualHeight - bodyZ;
 
                 ulong current_id = tracked_bodies[new_id].TrackingId;
 
@@ -377,7 +415,7 @@ namespace kinectSpaces
                     if (bodies_ids[exist_id] == current_id)
                     {
                         is_tracked = true;
-                        createBody(fieldOfView.ActualWidth / 2 + bodyX, bodyZ, bodyBrushes[exist_id]);
+                        createBody(fieldOfView.ActualWidth / 2 + bodyX, flippedBodyZ, ellipseBrushes[exist_id]);
                         updateTable(exist_id, new_id, tracked_bodies, current_id);
                         break;
                     }
@@ -392,7 +430,7 @@ namespace kinectSpaces
                         if (bodies_ids[fill_id] == 0)
                         {
                             bodies_ids[fill_id] = current_id;
-                            createBody(fieldOfView.ActualWidth / 2 + bodyX, bodyZ, bodyBrushes[fill_id]);
+                            createBody(fieldOfView.ActualWidth / 2 + bodyX, flippedBodyZ, ellipseBrushes[fill_id]);
                             updateTable(fill_id, new_id, tracked_bodies, current_id);
                             break;
                         }
@@ -466,7 +504,7 @@ namespace kinectSpaces
                 angle = angle + 90.0;
             }
             
-            return angle;
+            return Math.Round(angle);
         }
 
         private string coordinatesFieldofView(Body current_body)
@@ -476,8 +514,7 @@ namespace kinectSpaces
             // Remember that Z represents the depth and thus from the perspective of a Cartesian plane it represents Y from a top view
             double coord_y = Math.Round(current_body.Joints[JointType.SpineMid].Position.Z, 2);
             // Remember that X represents side to side movement. The center of the camera marks origin (0,0). 
-            // As the Kinect is mirrored we multiple by times -1
-            double coord_x = Math.Round(current_body.Joints[JointType.SpineMid].Position.X, 2) * (-1);
+            double coord_x = Math.Round(current_body.Joints[JointType.SpineMid].Position.X, 2);
 
             return "X: " + coord_x + " Y: " + coord_y;
         }
@@ -608,25 +645,24 @@ namespace kinectSpaces
         private void skeletonsIndexColors()
         {
 
+    
+            this.skeletonsColors.Add(new Pen(Brushes.Navy, 4));
+            this.skeletonsColors.Add(new Pen(Brushes.Pink, 4));
+            this.skeletonsColors.Add(new Pen(Brushes.Violet, 6));
             this.skeletonsColors.Add(new Pen(Brushes.Red, 4));
             this.skeletonsColors.Add(new Pen(Brushes.Coral, 4));
             this.skeletonsColors.Add(new Pen(Brushes.Green, 4));
-            this.skeletonsColors.Add(new Pen(Brushes.Blue, 4));
-            this.skeletonsColors.Add(new Pen(Brushes.Indigo, 4));
-            this.skeletonsColors.Add(new Pen(Brushes.Violet, 6));
-
         }
 
         private void ellipseIndexColors()
         {
 
-            this.bodyBrushes.Add(Brushes.Red);
-            this.bodyBrushes.Add(Brushes.Coral);
-            this.bodyBrushes.Add(Brushes.Green);
-            this.bodyBrushes.Add(Brushes.Blue);
-            this.bodyBrushes.Add(Brushes.Indigo);
-            this.bodyBrushes.Add(Brushes.Violet);
-
+            this.ellipseBrushes.Add(Brushes.Navy);
+            this.ellipseBrushes.Add(Brushes.Pink);
+            this.ellipseBrushes.Add(Brushes.Violet);
+            this.ellipseBrushes.Add(Brushes.Red);
+            this.ellipseBrushes.Add(Brushes.Coral);
+            this.ellipseBrushes.Add(Brushes.Green);
         }
 
         /// <summary>
@@ -692,13 +728,13 @@ namespace kinectSpaces
 
             Polygon myPolygon = new Polygon();
             myPolygon.Points = myPointCollection;
-            myPolygon.Fill = Brushes.Gold;
+            myPolygon.Fill = Brushes.White;
             myPolygon.Width = canvasWidth;
             myPolygon.Height = canvasHeight;
             myPolygon.Stretch = Stretch.Fill;
-            myPolygon.Stroke = Brushes.Gold;
+            myPolygon.Stroke = Brushes.GhostWhite;
             myPolygon.StrokeThickness = 1;
-            myPolygon.Opacity = 0.85;
+            myPolygon.Opacity = 1;
 
 
             //Add the triangle in our canvas
@@ -707,8 +743,59 @@ namespace kinectSpaces
             gridTriangle.Children.Add(myPolygon);
         }
 
+
+        private void StoreSkeletonData(Body[] bodies)
+        {
+            var timestamp = DateTime.Now;
+            var skeletonData = bodies.Where(b => b.IsTracked).Select(body => new
+            {
+                Timestamp = timestamp,
+                BodyId = body.TrackingId,
+                Joints = body.Joints.ToDictionary(j => j.Key.ToString(), j => new
+                {
+                    X = j.Value.Position.X,
+                    Y = j.Value.Position.Y,
+                    Z = j.Value.Position.Z,
+                    TrackingState = j.Value.TrackingState.ToString()
+                })
+            }).ToList();
+
+            periodicDataStorage.AddRange(skeletonData);
+        }
+
+        private void SaveSkeletonData()
+        {
+
+            if (periodicDataStorage.Any())
+            {
+                var json = JsonConvert.SerializeObject(periodicDataStorage, Json.Formatting.Indented);
+                string filePath = $@"C:\temp\skeletonData_{DateTime.Now:_yyyyMMdd_HHmmss}.json";
+
+            // Ensure the directory exists
+            string directoryPath = System.IO.Path.GetDirectoryName(filePath);
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            // Write the JSON string to the file
+            File.WriteAllText(filePath, json);
+
+                periodicDataStorage.Clear();  // Clear the stored data after saving
+            }    
+        }
+
+
         private void Window_Closed(object sender, EventArgs e)
         {
+            if (saveTimer != null)
+            {
+                saveTimer.Stop();
+                saveTimer.Dispose();
+            }
+
+            SaveSkeletonData();  // Save all remaining data
+
             if (this.multiSourceFrameReader != null)
             {
                 // BodyFrameReader is IDisposable
@@ -716,11 +803,15 @@ namespace kinectSpaces
                 this.multiSourceFrameReader = null;
             }
 
+
+
             if (this.kinectSensor != null)
             {
                 this.kinectSensor.Close();
                 this.kinectSensor = null;
             }
+
+
         }
 
         private void RGB_Click(object sender, RoutedEventArgs e)
