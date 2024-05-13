@@ -43,7 +43,7 @@ namespace kinectSpaces
         private DrawingGroup drawingGroup;
         private DrawingImage imageSource;
         private MultiSourceFrameReader multiSourceFrameReader = null;
-        private const DisplayFrameType DEFAULT_DISPLAYFRAMETYPE = DisplayFrameType.Color;
+        private const DisplayFrameType DEFAULT_DISPLAYFRAMETYPE = DisplayFrameType.Body;
         private int totalVisits = 0;
 
 
