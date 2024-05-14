@@ -166,7 +166,7 @@ namespace kinectSpaces
 
             details_start.Content= $"Start Time: {DateTime.Now.ToString("yyy-MM-dd HH:mm:ss")}";
             //Console.WriteLine($"Camera ID: {kinectSensor.UniqueKinectId}");
-            //details_cameraid.Content = $"Camera ID: {kinectSensor.UniqueKinectId}";
+            details_cameraid.Content = $"Camera ID: {kinectSensor.UniqueKinectId}";
             details_totaldetected.Content = "Total people detected: 0";
         }
 
@@ -217,30 +217,36 @@ namespace kinectSpaces
             using (bodyFrame) {
                 if (bodyFrame != null)
                 {
-
                     //Get the number the bodies in the scene
                     bodies = new Body[bodyFrame.BodyFrameSource.BodyCount];
 
-
-                    bodyFrame.GetAndRefreshBodyData(bodies);
-
-                    // Save skeleton data to file
-
-                    StoreSkeletonData(bodies);  // Save data to a file
-
-
-                    List<Body> tracked_bodies = bodies.Where(body => body.IsTracked == true).ToList();
-
-                     // Here we draw the path travelled during the session with pixel size traces
-                    var moves = fieldOfView.Children.OfType<Ellipse>().ToList();
-                    foreach (Ellipse ellipse in moves)
+                    if (bodies != null)
                     {
-                        ellipse.Width = 1;
-                        ellipse.Height = 1;
-                    }
 
-                    // Create bodies in the scene
-                    DrawTracked_Bodies(tracked_bodies);
+                        bodyFrame.GetAndRefreshBodyData(bodies);
+
+                        // Save skeleton data to file
+                        StoreSkeletonData(bodies);
+
+                        List<Body> tracked_bodies = bodies.Where(body => body.IsTracked == true).ToList();
+
+                        // Here we draw the path travelled during the session with pixel size traces
+                        var moves = fieldOfView.Children.OfType<Ellipse>().ToList();
+                        foreach (Ellipse ellipse in moves)
+                        {
+                            ellipse.Width = 1;
+                            ellipse.Height = 1;
+                        }
+
+                        // Create bodies in the scene
+                        DrawTracked_Bodies(tracked_bodies);
+                    }
+                    else 
+                    {
+                         ClearTriangle();
+                         ClearTable();
+                    }
+                    
 
                 }
             }
@@ -369,6 +375,8 @@ namespace kinectSpaces
 
         private void DrawTracked_Bodies(List<Body> tracked_bodies)
         {
+
+
             for (int last_id = 0; last_id < 6; last_id++)
             {
                 if (bodies_ids[last_id] == 0)
@@ -395,13 +403,14 @@ namespace kinectSpaces
             // Check if someone new entered the scene
             for (int new_id = 0; new_id < tracked_bodies.Count; new_id++)
             {
+                // Getting the coordinates for the table
                 dperPixZ = (double)fieldOfView.ActualHeight / 5000;
                 double bodyX = tracked_bodies[new_id].Joints[JointType.SpineMid].Position.X * dperPixZ * 1000 ;
                 double bodyZ = tracked_bodies[new_id].Joints[JointType.SpineMid].Position.Z * dperPixZ * 1000 ;
-
                 // This is flipped so in the triangle vision area, the movement is more visible on how we naturally move
-
                 double flippedBodyZ = fieldOfView.ActualHeight - bodyZ;
+
+
 
                 ulong current_id = tracked_bodies[new_id].TrackingId;
 
@@ -439,6 +448,39 @@ namespace kinectSpaces
             }
 
             details_totaldetected.Content = $"Total people detected: {totalVisits}";
+        }
+
+        private void ClearTriangle()
+        {
+            fieldOfView.Children.Clear();
+            drawVisionArea();
+        }
+
+        private void ClearTable()
+        {
+            prop_coordinats_01.Content = "";
+            prop_orientation_01.Content = "";
+            prop_bodyid_01.Content = "";
+
+            prop_coordinats_02.Content = "";
+            prop_orientation_02.Content = "";
+            prop_bodyid_02.Content = "";
+
+            prop_coordinats_03.Content = "";
+            prop_orientation_03.Content = "";
+            prop_bodyid_03.Content = "";
+
+            prop_coordinats_04.Content = "";
+            prop_orientation_04.Content = "";
+            prop_bodyid_04.Content = "";
+
+            prop_coordinats_05.Content = "";
+            prop_orientation_05.Content = "";
+            prop_bodyid_05.Content = "";
+
+            prop_coordinats_06.Content = "";
+            prop_orientation_06.Content = "";
+            prop_bodyid_06.Content = "";
         }
 
         private void updateTable(int exist_id, int new_id, List<Body> tracked_bodies, ulong current_id) {
@@ -749,6 +791,7 @@ namespace kinectSpaces
             var timestamp = DateTime.Now;
             var skeletonData = bodies.Where(b => b.IsTracked).Select(body => new
             {
+                CameraId = kinectSensor.UniqueKinectId,
                 Timestamp = timestamp,
                 BodyId = body.TrackingId,
                 Joints = body.Joints.ToDictionary(j => j.Key.ToString(), j => new
@@ -769,7 +812,7 @@ namespace kinectSpaces
             if (periodicDataStorage.Any())
             {
                 var json = JsonConvert.SerializeObject(periodicDataStorage, Json.Formatting.Indented);
-                string filePath = $@"C:\temp\skeletonData_{DateTime.Now:_yyyyMMdd_HHmmss}.json";
+                string filePath = $@"C:\temp\{kinectSensor.UniqueKinectId}_{DateTime.Now:_yyyyMMdd_HHmmss}.json";
 
             // Ensure the directory exists
             string directoryPath = System.IO.Path.GetDirectoryName(filePath);
