@@ -13,7 +13,7 @@
         Background="#FF2D2D30" 
         Closed="Window_Closed" 
         Loaded="Window_Loaded_1" 
-        WindowState="Normal"
+        WindowState="Maximized"
         WindowStyle="SingleBorderWindow">
 
     <!--@VASL 2021-2024-->
@@ -149,30 +149,34 @@
                     <TabControl Grid.Row="0" Name="DatasetsTabControl" SelectedIndex="0" Margin="4,4,0,4" Background="#FF2D2D30" Foreground="White" BorderBrush="#FF2D2D30">
 
                         <!--TabItem Name="Scene_info" Header="Scene Information" Background="#FF252526" BorderBrush="#FF2D2D30" Foreground="White"-->
-                        <TabItem Name="Scene_info" Header="Scene Information" Background="#FF323232" BorderBrush="#FF383838" Foreground="White">
+                        <TabItem Name="Scene_info" Header="Scene Information" Background="#FF2D2D30" BorderBrush="#FF2D2D30" Foreground="White">
                             <Border Background="#FF2D2D30" Padding="0" Width="521">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="100"/>
-                                        <RowDefinition Height="100"/>
+                                        <RowDefinition Height="90"/>
                                     </Grid.RowDefinitions>
 
                                     <Grid Grid.Row="0">
-                                        <Label Content="sense:ability" FontSize="34" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Top" Width="522" Margin="0,15,0,0" FontWeight="Bold"/>
-                                        <Label Content="Musikbezogener Wissenstransfer zwischen Materialität und Virtualität" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,69,0,0" Width="522" FontSize="16" />
+                                        <Label Content="sense:ability" FontSize="34" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Top" Width="522" FontWeight="Bold"/>
+                                        <Label Content="Musikbezogener Wissenstransfer zwischen Materialität und Virtualität" Foreground="Silver" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,55,0,0" Width="522" FontSize="16" />
                                     </Grid>
                                     <Grid Grid.Row="1" Margin="0,0,0,0">
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="50"></RowDefinition>
-                                            <RowDefinition Height="50"></RowDefinition>
+                                            <RowDefinition Height="30"></RowDefinition>
+                                            <RowDefinition Height="30"></RowDefinition>
+                                            <RowDefinition Height="30"></RowDefinition>
                                         </Grid.RowDefinitions>
 
-                                        <Grid Grid.Row="0" Margin="0,0,0,0">
-                                            <Label Content="Start time:" x:Name="details_start" FontSize="12" Foreground="White" HorizontalAlignment="Left" Width="454" Margin="0,25,0,0"/>
+                                        <Grid Grid.Row="0" >
+                                            <Label Content="Camera ID:" x:Name="details_cameraid" FontSize="12" Foreground="Silver" HorizontalAlignment="Left" Width="454" Margin="0,0,0,0"/>
+                                        </Grid>
+                                        <Grid Grid.Row="1" >
+                                            <Label Content="Start time:" x:Name="details_start" FontSize="12" Foreground="Silver" HorizontalAlignment="Left" Width="454" Margin="0,0,0,0"/>
                                         </Grid>
 
-                                        <Grid Grid.Row="1" Margin="0,0,0,0">
-                                            <Label Content="Total bodies detected:" x:Name="details_totaldetected"  FontSize="12" Foreground="White" HorizontalAlignment="Left" Width="454" Margin="0,0,0,0"/>
+                                        <Grid Grid.Row="2" >
+                                            <Label Content="Total bodies detected:" x:Name="details_totaldetected"  FontSize="12" Foreground="Silver" HorizontalAlignment="Left" Width="454" Margin="0,0,0,0"/>
 
                                         </Grid>
                                     </Grid>
@@ -341,16 +345,22 @@
 
 
                     <Grid Grid.Row="0" >
-                        <TextBlock HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" FontSize="24" Foreground="White"
-                                   Text="Das Forschungsprojekt sense:ability erkundet musikbezogenen Wissenstransfer. Von Mai bis Oktober 2024 findet eine Langzeitmessung mit Tiefensensoren in der Hohenzollern-Abteilungdes Musikinstrumenten-Museums statt." 
-                                   VerticalAlignment="Center" Width="700" Height="147"/>
+                        <Grid>
+                            <TextBlock HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" FontSize="24" Foreground="Snow"
+               VerticalAlignment="Center" Width="700" Height="147">
+        <Run Text="Das Forschungsprojekt"/>
+        <Run FontWeight="Bold" Text="sense:ability"/>
+        <Run Text="erkundet musikbezogenen Wissenstransfer. Von Mai bis Oktober 2024 findet eine Langzeitmessung mit Tiefensensoren in der Hohenzollern-Abteilung des Musikinstrumenten-Museums statt."/>
+                            </TextBlock>
+                        </Grid>
+
                     </Grid>
 
                     <Grid Grid.Row="1" Margin="0,0,0,-27" >
 
-                        <Image Source="/Logo_ifgi_long_png.png" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="155,-4,0,0" Height="68" Width="180" RenderTransformOrigin="0.5,0.501"/>
+                        <Image Source="/Logo_ifgi_long_png.png" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="155,0,0,0" Height="70" Width="180"/>
 
-                        <Image Source="/MIM_LogoNEU_8cm.jpg" HorizontalAlignment="Left" VerticalAlignment="Top" Height="68" Width="290" Margin="365,-4,0,0"/>
+                        <Image Source="/MIM_LogoNEU_8cm.jpg" HorizontalAlignment="Left" VerticalAlignment="Top" Height="70" Width="327" Margin="365,0,0,0" RenderTransformOrigin="0.498,0.508"/>
 
                     </Grid>
 

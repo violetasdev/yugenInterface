@@ -92,6 +92,7 @@ namespace kinectSpaces
         {
             // Initialize the sensor
             this.kinectSensor = KinectSensor.GetDefault();
+            this.kinectSensor.IsAvailableChanged += KinectSensor_IsAvailableChanged;
             this.multiSourceFrameReader = this.kinectSensor.OpenMultiSourceFrameReader(FrameSourceTypes.Body | FrameSourceTypes.Color);
             this.multiSourceFrameReader.MultiSourceFrameArrived += this.Reader_MultiSourceFrameArrived;
 
@@ -111,6 +112,7 @@ namespace kinectSpaces
             saveTimer.Elapsed += OnTimedEvent;
             saveTimer.AutoReset = true;
             saveTimer.Enabled = true;
+
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -120,6 +122,24 @@ namespace kinectSpaces
             Application.Current.Dispatcher.Invoke(() => {
                 SaveSkeletonData();  // Save the accumulated data
             });
+        }
+
+        private void KinectSensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)
+        {
+            if (e.IsAvailable)
+            {
+                // Sensor is available, display the camera ID
+                DisplayCameraId();
+            }
+        }
+
+        private void DisplayCameraId()
+        {
+            if (this.kinectSensor != null && this.kinectSensor.IsOpen)
+            {
+                string cameraId = this.kinectSensor.UniqueKinectId;
+                details_cameraid.Content = $"Camera ID: {cameraId}";
+            }
         }
 
         private void SetupCurrentDisplay(DisplayFrameType newDisplayFrameType)
@@ -164,9 +184,10 @@ namespace kinectSpaces
 
         private void setExperimentData(){
 
+           
+
             details_start.Content= $"Start Time: {DateTime.Now.ToString("yyy-MM-dd HH:mm:ss")}";
-            //Console.WriteLine($"Camera ID: {kinectSensor.UniqueKinectId}");
-            //details_cameraid.Content = $"Camera ID: {kinectSensor.UniqueKinectId}";
+     
             details_totaldetected.Content = "Total people detected: 0";
         }
 
@@ -217,30 +238,40 @@ namespace kinectSpaces
             using (bodyFrame) {
                 if (bodyFrame != null)
                 {
-
                     //Get the number the bodies in the scene
                     bodies = new Body[bodyFrame.BodyFrameSource.BodyCount];
 
+                    
 
-                    bodyFrame.GetAndRefreshBodyData(bodies);
+                        bodyFrame.GetAndRefreshBodyData(bodies);
 
-                    // Save skeleton data to file
+                        // Save skeleton data to file
+                        StoreSkeletonData(bodies);
 
-                    StoreSkeletonData(bodies);  // Save data to a file
+                        List<Body> tracked_bodies = bodies.Where(body => body.IsTracked == true).ToList();
 
+                        if (tracked_bodies.Count== 0)
+                        {
 
-                    List<Body> tracked_bodies = bodies.Where(body => body.IsTracked == true).ToList();
+                        ClearTriangle();
+                        ClearTable();
 
-                     // Here we draw the path travelled during the session with pixel size traces
-                    var moves = fieldOfView.Children.OfType<Ellipse>().ToList();
-                    foreach (Ellipse ellipse in moves)
-                    {
-                        ellipse.Width = 1;
-                        ellipse.Height = 1;
+                        
                     }
+                    else 
+                    {
+                         // Here we draw the path travelled during the session with pixel size traces
+                        var moves = fieldOfView.Children.OfType<Ellipse>().ToList();
+                        foreach (Ellipse ellipse in moves)
+                        {
+                            ellipse.Width = 1;
+                            ellipse.Height = 1;
+                        }
 
-                    // Create bodies in the scene
-                    DrawTracked_Bodies(tracked_bodies);
+                        // Create bodies in the scene
+                        DrawTracked_Bodies(tracked_bodies);
+                    }
+                    
 
                 }
             }
@@ -369,6 +400,8 @@ namespace kinectSpaces
 
         private void DrawTracked_Bodies(List<Body> tracked_bodies)
         {
+            bool anyBodyTracked = false;
+
             for (int last_id = 0; last_id < 6; last_id++)
             {
                 if (bodies_ids[last_id] == 0)
@@ -381,6 +414,7 @@ namespace kinectSpaces
                     if (tracked_bodies[new_id].TrackingId == bodies_ids[last_id])
                     {
                         is_tracked = true;
+                        anyBodyTracked = true;
                         break;
                     }
                 }
@@ -395,13 +429,14 @@ namespace kinectSpaces
             // Check if someone new entered the scene
             for (int new_id = 0; new_id < tracked_bodies.Count; new_id++)
             {
+                // Getting the coordinates for the table
                 dperPixZ = (double)fieldOfView.ActualHeight / 5000;
                 double bodyX = tracked_bodies[new_id].Joints[JointType.SpineMid].Position.X * dperPixZ * 1000 ;
                 double bodyZ = tracked_bodies[new_id].Joints[JointType.SpineMid].Position.Z * dperPixZ * 1000 ;
-
                 // This is flipped so in the triangle vision area, the movement is more visible on how we naturally move
-
                 double flippedBodyZ = fieldOfView.ActualHeight - bodyZ;
+
+
 
                 ulong current_id = tracked_bodies[new_id].TrackingId;
 
@@ -438,7 +473,46 @@ namespace kinectSpaces
                 }
             }
 
+            if (!anyBodyTracked)
+            {
+                ClearTriangle();
+                ClearTable();
+            }
+
             details_totaldetected.Content = $"Total people detected: {totalVisits}";
+        }
+
+        private void ClearTriangle()
+        {
+            fieldOfView.Children.Clear();
+            drawVisionArea();
+        }
+
+        private void ClearTable()
+        {
+            prop_coordinats_01.Content = "";
+            prop_orientation_01.Content = "";
+            prop_bodyid_01.Content = "";
+
+            prop_coordinats_02.Content = "";
+            prop_orientation_02.Content = "";
+            prop_bodyid_02.Content = "";
+
+            prop_coordinats_03.Content = "";
+            prop_orientation_03.Content = "";
+            prop_bodyid_03.Content = "";
+
+            prop_coordinats_04.Content = "";
+            prop_orientation_04.Content = "";
+            prop_bodyid_04.Content = "";
+
+            prop_coordinats_05.Content = "";
+            prop_orientation_05.Content = "";
+            prop_bodyid_05.Content = "";
+
+            prop_coordinats_06.Content = "";
+            prop_orientation_06.Content = "";
+            prop_bodyid_06.Content = "";
         }
 
         private void updateTable(int exist_id, int new_id, List<Body> tracked_bodies, ulong current_id) {
@@ -644,8 +718,6 @@ namespace kinectSpaces
         /// </summary>
         private void skeletonsIndexColors()
         {
-
-    
             this.skeletonsColors.Add(new Pen(Brushes.Navy, 4));
             this.skeletonsColors.Add(new Pen(Brushes.Pink, 4));
             this.skeletonsColors.Add(new Pen(Brushes.Violet, 6));
@@ -656,7 +728,6 @@ namespace kinectSpaces
 
         private void ellipseIndexColors()
         {
-
             this.ellipseBrushes.Add(Brushes.Navy);
             this.ellipseBrushes.Add(Brushes.Pink);
             this.ellipseBrushes.Add(Brushes.Violet);
@@ -747,8 +818,10 @@ namespace kinectSpaces
         private void StoreSkeletonData(Body[] bodies)
         {
             var timestamp = DateTime.Now;
+            var CameraId = "noid";
             var skeletonData = bodies.Where(b => b.IsTracked).Select(body => new
             {
+                CameraId = kinectSensor.UniqueKinectId,
                 Timestamp = timestamp,
                 BodyId = body.TrackingId,
                 Joints = body.Joints.ToDictionary(j => j.Key.ToString(), j => new
@@ -769,7 +842,7 @@ namespace kinectSpaces
             if (periodicDataStorage.Any())
             {
                 var json = JsonConvert.SerializeObject(periodicDataStorage, Json.Formatting.Indented);
-                string filePath = $@"C:\temp\skeletonData_{DateTime.Now:_yyyyMMdd_HHmmss}.json";
+                string filePath = $@"C:\temp\kinect_{kinectSensor.UniqueKinectId}_{DateTime.Now:_yyyyMMdd_HHmmss}.json";
 
             // Ensure the directory exists
             string directoryPath = System.IO.Path.GetDirectoryName(filePath);
