@@ -42,14 +42,14 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="kinectSpaces.exe" size="119208">
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="kinectSpaces.exe" size="120232">
       <assemblyIdentity name="kinectSpaces" version="1.0.0.0" language="neutral" processorArchitecture="amd64" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>L6bHCUtTVcSd+nbRSSG6GljRGxODpf7MJszQlJ+feRM=</dsig:DigestValue>
+        <dsig:DigestValue>Pa9cqnVtwlP6JJ+IVsEgk8S5le0vJ+j17aDR/jinAns=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
