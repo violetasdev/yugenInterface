@@ -108,7 +108,7 @@ namespace kinectSpaces
 
             InitializeComponent();
 
-            saveTimer = new Timer(3600000); // Set the interval to 1800000 milliseconds (30 minutes)
+            saveTimer = new Timer(1680000); // Set the interval to 1800000 milliseconds (30 minutes)
             saveTimer.Elapsed += OnTimedEvent;
             saveTimer.AutoReset = true;
             saveTimer.Enabled = true;
@@ -799,7 +799,7 @@ namespace kinectSpaces
 
             Polygon myPolygon = new Polygon();
             myPolygon.Points = myPointCollection;
-            myPolygon.Fill = Brushes.White;
+            myPolygon.Fill = Brushes.GhostWhite;
             myPolygon.Width = canvasWidth;
             myPolygon.Height = canvasHeight;
             myPolygon.Stretch = Stretch.Fill;
@@ -818,7 +818,6 @@ namespace kinectSpaces
         private void StoreSkeletonData(Body[] bodies)
         {
             var timestamp = DateTime.Now;
-            var CameraId = "noid";
             var skeletonData = bodies.Where(b => b.IsTracked).Select(body => new
             {
                 CameraId = kinectSensor.UniqueKinectId,
