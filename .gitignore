@@ -5,8 +5,4 @@
 /.vs/VSWorkspaceState.json
 /.vs/slnx.sqlite
 /kinectSpaces/.vs
-/.vs/catkInterface/FileContentIndex/342f03ad-0fba-4277-8e0d-84eaca2ef829.vsidx
-/.vs/catkInterface/FileContentIndex/2cb2c4c7-06dc-4d16-8b11-81d26e016246.vsidx
-/.vs/catkInterface/FileContentIndex/9d23ec3c-a431-4eb7-bc11-1e10e78fb10f.vsidx
-/.vs/catkInterface/FileContentIndex/95a695d2-1916-413b-bf8d-a77807a78219.vsidx
-/.vs/catkInterface/FileContentIndex/58c2d4d1-7994-48ff-be00-ebf8387ddba1.vsidx
+/.vs/catkInterface/FileContentIndex/*
