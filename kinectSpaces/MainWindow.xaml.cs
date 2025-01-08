@@ -78,14 +78,27 @@ namespace kinectSpaces
 
         //  Visualization - Movement
         private Body[] bodies = null;
-        ulong[] bodies_ids = { 0, 0, 0, 0, 0, 0 };
+
         List<Brush> ellipseBrushes = new List<Brush>();
-        public double dperPixZ = 0;
-        public double dperPixX = 0;
+        public double positionZ = 0;
+        public double positionX = 0;
 
 
         private Timer saveTimer;
         private List<object> periodicDataStorage = new List<object>();
+
+        private const int MAX_BODIES = 6;
+        private List<ulong> bodiesIds = new List<ulong>(MAX_BODIES);
+
+        // Initialize the list with zeroes (similar to the array approach)
+        private void InitializeBodiesIds()
+        {
+            bodiesIds.Clear();
+            for (int i = 0; i < MAX_BODIES; i++)
+            {
+                bodiesIds.Add(0);
+            }
+        }
 
 
         public MainWindow()
@@ -108,7 +121,7 @@ namespace kinectSpaces
 
             InitializeComponent();
 
-            saveTimer = new Timer(3600000); // Set the interval to 1800000 milliseconds (30 minutes)
+            saveTimer = new Timer(1680000); // Set the interval to 1800000 milliseconds (30 minutes)
             saveTimer.Elapsed += OnTimedEvent;
             saveTimer.AutoReset = true;
             saveTimer.Enabled = true;
@@ -130,6 +143,17 @@ namespace kinectSpaces
             {
                 // Sensor is available, display the camera ID
                 DisplayCameraId();
+            }
+
+        }
+
+        private void RestartKinectSensor()
+        {
+            if (this.kinectSensor != null)
+            {
+                this.kinectSensor.Close();
+                this.kinectSensor = KinectSensor.GetDefault();
+                this.kinectSensor.Open();
             }
         }
 
@@ -182,12 +206,13 @@ namespace kinectSpaces
             }
         }
 
-        private void setExperimentData(){
+        private void setExperimentData()
+        {
 
-           
 
-            details_start.Content= $"Start Time: {DateTime.Now.ToString("yyy-MM-dd HH:mm:ss")}";
-     
+
+            details_start.Content = $"Start Time: {DateTime.Now.ToString("yyy-MM-dd HH:mm:ss")}";
+
             details_totaldetected.Content = "Total people detected: 0";
         }
 
@@ -207,18 +232,55 @@ namespace kinectSpaces
             }
         }
 
-        //Create each ellipse (circle) used to show the position of the person in the camera's field of view
-        private Ellipse createBody(double coord_x, double coord_y, Brush brush)
+        private Path CreateBody(double centerX, double centerY, Brush fillBrush, double size = 15)
         {
-            Ellipse ellipse = new Ellipse();
-            ellipse.Fill = brush;
-            ellipse.Width = 15;
-            ellipse.Height = 15;
-            this.fieldOfView.Children.Add(ellipse);
-            Canvas.SetLeft(ellipse, coord_x);
-            Canvas.SetTop(ellipse, fieldOfView.ActualHeight - coord_y);
-            return ellipse;
+            // Create the star shape
+            Path star = new Path
+            {
+                Fill = fillBrush,
+                Stroke = Brushes.Black,
+                StrokeThickness = 1,
+                Data = GenerateStarGeometry(centerX, centerY, size, size / 2) // Star geometry
+            };
+
+            // Add the star to the canvas
+            fieldOfView.Children.Add(star);
+
+            return star;
         }
+
+        private Geometry GenerateStarGeometry(double centerX, double centerY, double outerRadius, double innerRadius, int numPoints = 5)
+        {
+            StreamGeometry geometry = new StreamGeometry();
+
+            using (StreamGeometryContext ctx = geometry.Open())
+            {
+                double angleStep = Math.PI / numPoints; // Half the angle between points
+                Point startPoint = new Point(
+                    centerX + outerRadius * Math.Cos(0),
+                    centerY - outerRadius * Math.Sin(0)
+                );
+
+                ctx.BeginFigure(startPoint, true, true);
+
+                for (int i = 1; i <= numPoints * 2; i++)
+                {
+                    double angle = i * angleStep;
+                    double radius = (i % 2 == 0) ? outerRadius : innerRadius;
+
+                    Point point = new Point(
+                        centerX + radius * Math.Cos(angle),
+                        centerY - radius * Math.Sin(angle)
+                    );
+
+                    ctx.LineTo(point, true, false);
+                }
+            }
+
+            geometry.Freeze();
+            return geometry;
+        }
+
 
         public ImageSource ImageSource
         {
@@ -228,77 +290,76 @@ namespace kinectSpaces
             }
         }
 
-
         private void Reader_MultiSourceFrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
         {
+            // Acquire the multi-source frame
+            using (MultiSourceFrame multiSourceFrame = e.FrameReference.AcquireFrame())
+            {
+                if (multiSourceFrame == null)
+                    return;
 
-            MultiSourceFrame multiSourceFrame = e.FrameReference.AcquireFrame();
-            BodyFrame bodyFrame = multiSourceFrame.BodyFrameReference.AcquireFrame();
-
-            using (bodyFrame) {
-                if (bodyFrame != null)
+                // Process body frame
+                using (BodyFrame bodyFrame = multiSourceFrame.BodyFrameReference.AcquireFrame())
                 {
-                    //Get the number the bodies in the scene
-                    bodies = new Body[bodyFrame.BodyFrameSource.BodyCount];
-
-                    
-
-                        bodyFrame.GetAndRefreshBodyData(bodies);
-
-                        // Save skeleton data to file
-                        StoreSkeletonData(bodies);
-
-                        List<Body> tracked_bodies = bodies.Where(body => body.IsTracked == true).ToList();
-
-                        if (tracked_bodies.Count== 0)
-                        {
-
-                        ClearTriangle();
-                        ClearTable();
-
-                        
-                    }
-                    else 
+                    if (bodyFrame != null)
                     {
-                         // Here we draw the path travelled during the session with pixel size traces
-                        var moves = fieldOfView.Children.OfType<Ellipse>().ToList();
-                        foreach (Ellipse ellipse in moves)
-                        {
-                            ellipse.Width = 1;
-                            ellipse.Height = 1;
-                        }
-
-                        // Create bodies in the scene
-                        DrawTracked_Bodies(tracked_bodies);
+                        ProcessBodyFrame(bodyFrame);
                     }
-                    
+                }
 
+                // Handle other frame types based on the current display type
+                switch (currentDisplayFrameType)
+                {
+                    case DisplayFrameType.Body:
+                        using (BodyFrame skeletonFrame = multiSourceFrame.BodyFrameReference.AcquireFrame())
+                        {
+                            if (skeletonFrame != null)
+                            {
+                                ShowBodyFrame(skeletonFrame);
+                            }
+                        }
+                        break;
+
+                    case DisplayFrameType.Color:
+                        using (ColorFrame colorFrame = multiSourceFrame.ColorFrameReference.AcquireFrame())
+                        {
+                            if (colorFrame != null)
+                            {
+                                ShowColorFrame(colorFrame);
+                            }
+                        }
+                        break;
+
+                    default:
+                        break;
                 }
             }
-
-            switch (currentDisplayFrameType)
-            {
-                case DisplayFrameType.Body:
-
-                    using (BodyFrame skeletonFrame = multiSourceFrame.BodyFrameReference.AcquireFrame())
-                    {
-                        ShowBodyFrame(skeletonFrame);
-                    }
-
-                    break;
-                case DisplayFrameType.Color:
-                    using (ColorFrame colorFrame = multiSourceFrame.ColorFrameReference.AcquireFrame())
-                    {
-                        ShowColorFrame(colorFrame);
-                    }
-                    break;
-                default:
-                    break;
-            }
-
-
-
         }
+
+        private void ProcessBodyFrame(BodyFrame bodyFrame)
+        {
+            // Get the number of bodies in the scene
+            bodies = new Body[bodyFrame.BodyFrameSource.BodyCount];
+            bodyFrame.GetAndRefreshBodyData(bodies);
+
+            // Save skeleton data to file
+            StoreSkeletonData(bodies);
+
+            // Filter tracked bodies
+            List<Body> trackedBodies = bodies.Where(body => body.IsTracked).ToList();
+
+            if (trackedBodies.Count == 0)
+            {
+                ClearTriangle();
+                ClearTable();
+            }
+            else
+            {
+                // Draw tracked bodies in the scene
+                DrawTracked_Bodies(trackedBodies);
+            }
+        }
+
 
         private void ShowBodyFrame(BodyFrame bodyFrame)
         {
@@ -398,88 +459,110 @@ namespace kinectSpaces
 
         }
 
-        private void DrawTracked_Bodies(List<Body> tracked_bodies)
+        private const int MAX_BODIES = 6;
+
+        private void DrawTrackedBodies(List<Body> trackedBodies)
         {
             bool anyBodyTracked = false;
 
-            for (int last_id = 0; last_id < 6; last_id++)
+            // Step 1: Reset untracked IDs
+            ResetUntrackedBodies(trackedBodies);
+
+            // Step 2: Process each tracked body
+            foreach (var body in trackedBodies)
             {
-                if (bodies_ids[last_id] == 0)
+                ulong currentId = body.TrackingId;
+
+                // Calculate body position
+                var position = CalculateBodyPosition(body);
+                if (position == null)
                     continue;
 
-                bool is_tracked = false;
+                // Check if the body was previously tracked
+                int existingIndex = FindExistingBodyIndex(currentId);
 
-                for (int new_id = 0; new_id < tracked_bodies.Count; new_id++)
+                if (existingIndex >= 0)
                 {
-                    if (tracked_bodies[new_id].TrackingId == bodies_ids[last_id])
-                    {
-                        is_tracked = true;
-                        anyBodyTracked = true;
-                        break;
-                    }
+                    anyBodyTracked = true;
+                    UpdateTrackedBody(existingIndex, body, position.Value);
                 }
-
-                if (!is_tracked)
+                else
                 {
-                    bodies_ids[last_id] = 0;
-                    
+                    AssignNewBody(currentId, body, position.Value);
                 }
             }
 
-            // Check if someone new entered the scene
-            for (int new_id = 0; new_id < tracked_bodies.Count; new_id++)
-            {
-                // Getting the coordinates for the table
-                dperPixZ = (double)fieldOfView.ActualHeight / 5000;
-                double bodyX = tracked_bodies[new_id].Joints[JointType.SpineMid].Position.X * dperPixZ * 1000 ;
-                double bodyZ = tracked_bodies[new_id].Joints[JointType.SpineMid].Position.Z * dperPixZ * 1000 ;
-                // This is flipped so in the triangle vision area, the movement is more visible on how we naturally move
-                double flippedBodyZ = fieldOfView.ActualHeight - bodyZ;
-
-
-
-                ulong current_id = tracked_bodies[new_id].TrackingId;
-
-                // true: if body was previosly tracked
-                // false: if its a new body just entered the scene
-                bool is_tracked = false;
-
-                // First check previously tracked bodies
-                for (int exist_id = 0; exist_id < 6; exist_id++)
-                {
-                    if (bodies_ids[exist_id] == current_id)
-                    {
-                        is_tracked = true;
-                        createBody(fieldOfView.ActualWidth / 2 + bodyX, flippedBodyZ, ellipseBrushes[exist_id]);
-                        updateTable(exist_id, new_id, tracked_bodies, current_id);
-                        break;
-                    }
-                }
-
-                // If not previously tracked, then fill first empty spot in the list of tracking bodies
-                if (!is_tracked)
-                {
-                    totalVisits++;
-                    for (int fill_id = 0; fill_id < 6; fill_id++)
-                    {
-                        if (bodies_ids[fill_id] == 0)
-                        {
-                            bodies_ids[fill_id] = current_id;
-                            createBody(fieldOfView.ActualWidth / 2 + bodyX, flippedBodyZ, ellipseBrushes[fill_id]);
-                            updateTable(fill_id, new_id, tracked_bodies, current_id);
-                            break;
-                        }
-                    }
-                }
-            }
-
+            // Step 3: Clear visuals if no bodies are tracked
             if (!anyBodyTracked)
             {
                 ClearTriangle();
                 ClearTable();
             }
 
+            // Update total visits counter
             details_totaldetected.Content = $"Total people detected: {totalVisits}";
+        }
+
+        private void ResetUntrackedBodies(List<Body> trackedBodies)
+        {
+            var trackedIds = new HashSet<ulong>(trackedBodies.Select(b => b.TrackingId));
+
+            for (int i = 0; i < bodiesIds.Length; i++)
+            {
+                if (bodiesIds[i] != 0 && !trackedIds.Contains(bodiesIds[i]))
+                {
+                    bodiesIds[i] = 0; // Reset untracked body ID
+                }
+            }
+        }
+
+        private (double X, double Z)? CalculateBodyPosition(Body body)
+        {
+            const double scaleFactor = 1000.0;
+
+            if (!body.Joints.ContainsKey(JointType.SpineMid))
+                return null;
+
+            var joint = body.Joints[JointType.SpineMid];
+            double positionZ = fieldOfView.ActualHeight / 5000.0;
+            double bodyX = joint.Position.X * positionZ * scaleFactor;
+            double bodyZ = joint.Position.Z * positionZ * scaleFactor;
+
+            // Flip Z-axis for visualization
+            double flippedBodyZ = fieldOfView.ActualHeight - bodyZ;
+
+            return (bodyX, flippedBodyZ);
+        }
+
+        private int FindExistingBodyIndex(ulong trackingId)
+        {
+            for (int i = 0; i < MAX_BODIES; i++)
+            {
+                if (bodiesIds[i] == trackingId)
+                    return i;
+            }
+            return -1;
+        }
+
+        private void UpdateTrackedBody(int index, Body body, (double X, double Z) position)
+        {
+            createBody(fieldOfView.ActualWidth / 2 + position.X, position.Z, ellipseBrushes[index]);
+            updateTable(index, body.TrackingId, body);
+        }
+
+        private void AssignNewBody(ulong trackingId, Body body, (double X, double Z) position)
+        {
+            for (int i = 0; i < MAX_BODIES; i++)
+            {
+                if (bodiesIds[i] == 0)
+                {
+                    bodiesIds[i] = trackingId;
+                    createBody(fieldOfView.ActualWidth / 2 + position.X, position.Z, ellipseBrushes[i]);
+                    updateTable(i, body.TrackingId, body);
+                    totalVisits++;
+                    return;
+                }
+            }
         }
 
         private void ClearTriangle()
@@ -490,33 +573,21 @@ namespace kinectSpaces
 
         private void ClearTable()
         {
-            prop_coordinats_01.Content = "";
-            prop_orientation_01.Content = "";
-            prop_bodyid_01.Content = "";
+            // Store references to table UI elements in a list
+            var coordinateProps = new[] { prop_coordinats_01, prop_coordinats_02, prop_coordinats_03, prop_coordinats_04, prop_coordinats_05, prop_coordinats_06 };
+            var orientationProps = new[] { prop_orientation_01, prop_orientation_02, prop_orientation_03, prop_orientation_04, prop_orientation_05, prop_orientation_06 };
+            var bodyIdProps = new[] { prop_bodyid_01, prop_bodyid_02, prop_bodyid_03, prop_bodyid_04, prop_bodyid_05, prop_bodyid_06 };
 
-            prop_coordinats_02.Content = "";
-            prop_orientation_02.Content = "";
-            prop_bodyid_02.Content = "";
-
-            prop_coordinats_03.Content = "";
-            prop_orientation_03.Content = "";
-            prop_bodyid_03.Content = "";
-
-            prop_coordinats_04.Content = "";
-            prop_orientation_04.Content = "";
-            prop_bodyid_04.Content = "";
-
-            prop_coordinats_05.Content = "";
-            prop_orientation_05.Content = "";
-            prop_bodyid_05.Content = "";
-
-            prop_coordinats_06.Content = "";
-            prop_orientation_06.Content = "";
-            prop_bodyid_06.Content = "";
+            foreach (var label in coordinateProps.Concat(orientationProps).Concat(bodyIdProps))
+            {
+                label.Content = string.Empty;
+            }
         }
 
-        private void updateTable(int exist_id, int new_id, List<Body> tracked_bodies, ulong current_id) {
-           
+
+        private void updateTable(int exist_id, int new_id, List<Body> tracked_bodies, ulong current_id)
+        {
+
             switch (exist_id)
             {
                 case 0:
@@ -565,19 +636,20 @@ namespace kinectSpaces
         public double getBodyOrientation(Body bodyData)
         {
 
-            double x = bodyData.Joints[JointType.ShoulderRight].Position.X- bodyData.Joints[JointType.ShoulderLeft].Position.X;
+            double x = bodyData.Joints[JointType.ShoulderRight].Position.X - bodyData.Joints[JointType.ShoulderLeft].Position.X;
             double y = bodyData.Joints[JointType.ShoulderRight].Position.Z - bodyData.Joints[JointType.ShoulderLeft].Position.Z;
 
-            double angle = Math.Round(Math.Atan(y/x)*(180/Math.PI),2);
+            double angle = Math.Round(Math.Atan(y / x) * (180 / Math.PI), 2);
 
-            if (bodyData.Joints[JointType.ShoulderRight].Position.X < bodyData.Joints[JointType.ShoulderLeft].Position.X) {
+            if (bodyData.Joints[JointType.ShoulderRight].Position.X < bodyData.Joints[JointType.ShoulderLeft].Position.X)
+            {
                 angle = angle - 90.0;
             }
             else
             {
                 angle = angle + 90.0;
             }
-            
+
             return Math.Round(angle);
         }
 
@@ -593,7 +665,7 @@ namespace kinectSpaces
             return "X: " + coord_x + " Y: " + coord_y;
         }
 
-     
+
 
         // ***************************************************************************//
         // ************************* BODY DATA PROCESSING **************************//
@@ -777,7 +849,8 @@ namespace kinectSpaces
 
         }
 
-        private void drawVisionArea() {
+        private void drawVisionArea()
+        {
             // Draw Kinect Vision Area based on the size of our canvas
             int canvasHeight = (int)fieldOfView.ActualHeight;
             int canvasWidth = (int)fieldOfView.ActualWidth;
@@ -799,7 +872,7 @@ namespace kinectSpaces
 
             Polygon myPolygon = new Polygon();
             myPolygon.Points = myPointCollection;
-            myPolygon.Fill = Brushes.White;
+            myPolygon.Fill = Brushes.GhostWhite;
             myPolygon.Width = canvasWidth;
             myPolygon.Height = canvasHeight;
             myPolygon.Stretch = Stretch.Fill;
@@ -818,7 +891,6 @@ namespace kinectSpaces
         private void StoreSkeletonData(Body[] bodies)
         {
             var timestamp = DateTime.Now;
-            var CameraId = "noid";
             var skeletonData = bodies.Where(b => b.IsTracked).Select(body => new
             {
                 CameraId = kinectSensor.UniqueKinectId,
@@ -844,18 +916,18 @@ namespace kinectSpaces
                 var json = JsonConvert.SerializeObject(periodicDataStorage, Json.Formatting.Indented);
                 string filePath = $@"C:\temp\kinect_{kinectSensor.UniqueKinectId}_{DateTime.Now:_yyyyMMdd_HHmmss}.json";
 
-            // Ensure the directory exists
-            string directoryPath = System.IO.Path.GetDirectoryName(filePath);
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
+                // Ensure the directory exists
+                string directoryPath = System.IO.Path.GetDirectoryName(filePath);
+                if (!Directory.Exists(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
 
-            // Write the JSON string to the file
-            File.WriteAllText(filePath, json);
+                // Write the JSON string to the file
+                File.WriteAllText(filePath, json);
 
                 periodicDataStorage.Clear();  // Clear the stored data after saving
-            }    
+            }
         }
 
 
@@ -871,7 +943,6 @@ namespace kinectSpaces
 
             if (this.multiSourceFrameReader != null)
             {
-                // BodyFrameReader is IDisposable
                 this.multiSourceFrameReader.Dispose();
                 this.multiSourceFrameReader = null;
             }
@@ -907,13 +978,13 @@ namespace kinectSpaces
             setExperimentData();
 
             drawVisionArea();
-            
+
         }
 
         private void CloseWindow_Clic(object sender, RoutedEventArgs e)
         {
             Close();
-            
+
         }
     }
 }
