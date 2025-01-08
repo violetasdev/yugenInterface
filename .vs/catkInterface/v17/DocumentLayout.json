@@ -3,8 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\kinectSpaces\\MainWindow.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:kinectSpaces\\MainWindow.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\README.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:README.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\kinectSpaces\\LICENSE||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:kinectSpaces\\LICENSE||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\kinectSpaces\\MainWindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -23,27 +27,41 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "MainWindow.xaml",
-              "DocumentMoniker": "C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\kinectSpaces\\MainWindow.xaml",
-              "RelativeDocumentMoniker": "kinectSpaces\\MainWindow.xaml",
-              "ToolTip": "C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\kinectSpaces\\MainWindow.xaml",
-              "RelativeToolTip": "kinectSpaces\\MainWindow.xaml",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2024-09-06T22:21:15.798Z",
+              "Title": "README.md",
+              "DocumentMoniker": "C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\README.md",
+              "RelativeDocumentMoniker": "README.md",
+              "ToolTip": "C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\README.md",
+              "RelativeToolTip": "README.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2024-12-11T00:40:53.732Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "MainWindow.xaml.cs",
               "DocumentMoniker": "C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\kinectSpaces\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "kinectSpaces\\MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\kinectSpaces\\MainWindow.xaml.cs",
               "RelativeToolTip": "kinectSpaces\\MainWindow.xaml.cs",
-              "ViewState": "AgIAAHADAAAAAAAAAAAuwIIDAABaAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-01-31T12:28:30.33Z"
+              "WhenOpened": "2024-12-11T00:40:38.887Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "LICENSE",
+              "DocumentMoniker": "C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\kinectSpaces\\LICENSE",
+              "RelativeDocumentMoniker": "kinectSpaces\\LICENSE",
+              "ToolTip": "C:\\Users\\viole\\source\\repos\\violetasdev\\catkInterface\\kinectSpaces\\LICENSE",
+              "RelativeToolTip": "kinectSpaces\\LICENSE",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-12-11T00:40:30.235Z",
+              "EditorCaption": ""
             }
           ]
         }
